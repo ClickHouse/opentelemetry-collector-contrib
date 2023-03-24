@@ -18,11 +18,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"net/url"
 	"strings"
 	"time"
 
-	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -176,7 +176,8 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 
 	// language=ClickHouse SQL
-	insertLogsSQLTemplate = `INSERT INTO %s (
+	// SETTINGS async_insert=1, wait_for_async_insert=0
+	insertLogsSQLTemplate = `INSERT INTO %s SETTINGS async_insert=1, wait_for_async_insert=0 (
                         Timestamp,
                         TraceId,
                         SpanId,
