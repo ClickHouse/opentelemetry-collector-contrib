@@ -19,6 +19,8 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"log"
 	"net/url"
 	"strings"
 	"time"
@@ -33,24 +35,26 @@ import (
 )
 
 type logsExporter struct {
-	client    *sql.DB
-	insertSQL string
+	client       *sql.DB
+	nativeClient clickhouse.Conn
+	insertSQL    string
 
 	logger *zap.Logger
 	cfg    *Config
 }
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
-	client, err := newClickHouseConn(cfg)
+	client, nativeClient, err := newClickHouseConn(cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return &logsExporter{
-		client:    client,
-		insertSQL: renderInsertLogsSQL(cfg),
-		logger:    logger,
-		cfg:       cfg,
+		client:       client,
+		nativeClient: nativeClient,
+		insertSQL:    renderInsertLogsSQL(cfg),
+		logger:       logger,
+		cfg:          cfg,
 	}, nil
 }
 
@@ -73,6 +77,76 @@ func (e *logsExporter) shutdown(_ context.Context) error {
 	return nil
 }
 
+func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) error {
+	start := time.Now()
+
+	err := func() error {
+
+		batch, err := e.nativeClient.PrepareBatch(ctx, e.insertSQL)
+		if err != nil {
+			return fmt.Errorf("Prepare:%w", err)
+		}
+
+		var serviceName string
+		resAttr := make(map[string]string)
+
+		resourceLogs := ld.ResourceLogs()
+		for i := 0; i < resourceLogs.Len(); i++ {
+			logs := resourceLogs.At(i)
+			res := logs.Resource()
+
+			attrs := res.Attributes()
+			attributesToMap(attrs, resAttr)
+
+			if v, ok := attrs.Get(conventions.AttributeServiceName); ok {
+				serviceName = v.Str()
+			}
+			for j := 0; j < logs.ScopeLogs().Len(); j++ {
+				rs := logs.ScopeLogs().At(j).LogRecords()
+				for k := 0; k < rs.Len(); k++ {
+					r := rs.At(k)
+
+					logAttr := make(map[string]string, attrs.Len())
+					attributesToMap(r.Attributes(), logAttr)
+
+					err = batch.Append(
+						r.Timestamp().AsTime(),
+						traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
+						traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
+						uint32(r.Flags()),
+						r.SeverityText(),
+						int32(r.SeverityNumber()),
+						serviceName,
+						r.Body().AsString(),
+						resAttr,
+						logAttr,
+					)
+					if err != nil {
+						return fmt.Errorf("Append:%w", err)
+					}
+				}
+			}
+
+			// clear map for reuse
+			for k := range resAttr {
+				delete(resAttr, k)
+			}
+		}
+
+		if err := batch.Send(); err != nil {
+			_ = batch.Abort()
+			return fmt.Errorf("Send:%w", err)
+		}
+
+		return nil
+	}()
+
+	duration := time.Since(start)
+	e.logger.Info("insert logs", zap.Int("records", ld.LogRecordCount()),
+		zap.String("cost", duration.String()))
+	return err
+}
+
 func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	start := time.Now()
 	err := func() error {
@@ -80,7 +154,6 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 		if err != nil {
 			return fmt.Errorf("Begin:%w", err)
 		}
-
 		batch, err := scope.Prepare(e.insertSQL)
 		if err != nil {
 			return fmt.Errorf("Prepare:%w", err)
@@ -177,7 +250,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 
 	// language=ClickHouse SQL
 	// SETTINGS async_insert=1, wait_for_async_insert=0
-	insertLogsSQLTemplate = `INSERT INTO %s SETTINGS async_insert=1, wait_for_async_insert=0 (
+	insertLogsSQLTemplate = `INSERT INTO %s SETTINGS (
                         Timestamp,
                         TraceId,
                         SpanId,
@@ -204,7 +277,7 @@ func newClickHouseClient(cfg *Config) (*sql.DB, error) {
 }
 
 // used by logs:
-func newClickHouseConn(cfg *Config) (*sql.DB, error) {
+func newClickHouseConn(cfg *Config) (*sql.DB, driver.Conn, error) {
 	endpoint := cfg.Endpoint
 
 	if len(cfg.ConnectionParams) > 0 {
@@ -224,8 +297,11 @@ func newClickHouseConn(cfg *Config) (*sql.DB, error) {
 
 	opts, err := clickhouse.ParseDSN(endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint: %w", err)
+		return nil, nil, fmt.Errorf("unable to parse endpoint: %w", err)
 	}
+	// TODO config
+	opts.Settings["async_insert"] = 1
+	opts.Settings["wait_for_async_insert"] = 0
 
 	opts.Auth = clickhouse.Auth{
 		Database: cfg.Database,
@@ -235,7 +311,11 @@ func newClickHouseConn(cfg *Config) (*sql.DB, error) {
 
 	// can return a "bad" connection if misconfigured, we won't know
 	// until a Ping, Exec, etc.. is done
-	return clickhouse.OpenDB(opts), nil
+	conn, err := clickhouse.Open(opts)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return clickhouse.OpenDB(opts), conn, nil
 }
 
 func createDatabase(ctx context.Context, cfg *Config) error {
