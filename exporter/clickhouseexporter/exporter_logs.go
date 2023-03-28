@@ -17,10 +17,10 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"log"
 	"net/url"
 	"strings"
 	"time"
@@ -35,9 +35,10 @@ import (
 )
 
 type logsExporter struct {
-	client       *sql.DB
-	nativeClient clickhouse.Conn
-	insertSQL    string
+	client          *sql.DB
+	nativeClient    clickhouse.Conn
+	insertSQL       string
+	inlineInsertSQL string
 
 	logger *zap.Logger
 	cfg    *Config
@@ -50,11 +51,12 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 	}
 
 	return &logsExporter{
-		client:       client,
-		nativeClient: nativeClient,
-		insertSQL:    renderInsertLogsSQL(cfg),
-		logger:       logger,
-		cfg:          cfg,
+		client:          client,
+		nativeClient:    nativeClient,
+		insertSQL:       renderInsertLogsSQL(cfg),
+		inlineInsertSQL: renderInlineInsertLogsSQL(cfg),
+		logger:          logger,
+		cfg:             cfg,
 	}, nil
 }
 
@@ -82,14 +84,10 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 
 	err := func() error {
 
-		batch, err := e.nativeClient.PrepareBatch(ctx, e.insertSQL)
-		if err != nil {
-			return fmt.Errorf("Prepare:%w", err)
-		}
-
 		var serviceName string
 		resAttr := make(map[string]string)
 
+		insertValuesArray := make([]string, ld.ResourceLogs().Len())
 		resourceLogs := ld.ResourceLogs()
 		for i := 0; i < resourceLogs.Len(); i++ {
 			logs := resourceLogs.At(i)
@@ -101,6 +99,7 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 			if v, ok := attrs.Get(conventions.AttributeServiceName); ok {
 				serviceName = v.Str()
 			}
+
 			for j := 0; j < logs.ScopeLogs().Len(); j++ {
 				rs := logs.ScopeLogs().At(j).LogRecords()
 				for k := 0; k < rs.Len(); k++ {
@@ -109,21 +108,13 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 					logAttr := make(map[string]string, attrs.Len())
 					attributesToMap(r.Attributes(), logAttr)
 
-					err = batch.Append(
-						r.Timestamp().AsTime(),
-						traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
-						traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
-						uint32(r.Flags()),
-						r.SeverityText(),
-						int32(r.SeverityNumber()),
-						serviceName,
-						r.Body().AsString(),
-						resAttr,
-						logAttr,
-					)
+					values, err := prepareValues(r, serviceName, resAttr, logAttr)
 					if err != nil {
-						return fmt.Errorf("Append:%w", err)
+						return err
 					}
+
+					insertValuesArray[k] = values
+
 				}
 			}
 
@@ -132,19 +123,45 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 				delete(resAttr, k)
 			}
 		}
+		formattedInsertQuery := formatInsert(insertValuesArray, e.inlineInsertSQL)
 
-		if err := batch.Send(); err != nil {
-			_ = batch.Abort()
-			return fmt.Errorf("Send:%w", err)
-		}
-
-		return nil
+		return e.nativeClient.AsyncInsert(ctx, formattedInsertQuery, false)
 	}()
 
 	duration := time.Since(start)
 	e.logger.Info("insert logs", zap.Int("records", ld.LogRecordCount()),
 		zap.String("cost", duration.String()))
 	return err
+}
+
+func formatInsert(insertValuesArray []string, inlineInsertSQL string) string {
+	valuesString := strings.Join(insertValuesArray, ",")
+	formattedInsertQuery := inlineInsertSQL + valuesString
+	return formattedInsertQuery
+}
+
+func prepareValues(r plog.LogRecord, serviceName string, resAttr map[string]string, logAttr map[string]string) (string, error) {
+	resAttrString, err := json.Marshal(resAttr)
+	if err != nil {
+		return "", err
+	}
+	logAttrString, err := json.Marshal(logAttr)
+	if err != nil {
+		return "", err
+	}
+
+	values := fmt.Sprintf(`(%s, %s, %s, %d, %s, %d, %s, %s, %s, %s)`, r.Timestamp().AsTime().Format(time.UnixDate),
+		traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
+		traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
+		uint32(r.Flags()),
+		r.SeverityText(),
+		int32(r.SeverityNumber()),
+		serviceName,
+		r.Body().AsString(),
+		string(resAttrString),
+		string(logAttrString))
+
+	return values, nil
 }
 
 func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
@@ -249,8 +266,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 
 	// language=ClickHouse SQL
-	// SETTINGS async_insert=1, wait_for_async_insert=0
-	insertLogsSQLTemplate = `INSERT INTO %s SETTINGS (
+	insertLogsSQLTemplate = `INSERT INTO %s (
                         Timestamp,
                         TraceId,
                         SpanId,
@@ -262,6 +278,18 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         ResourceAttributes,
                         LogAttributes
                         )`
+	inlineinsertLogsSQLTemplate = `INSERT INTO %s (
+                        Timestamp,
+                        TraceId,
+                        SpanId,
+                        TraceFlags,
+                        SeverityText,
+                        SeverityNumber,
+                        ServiceName,
+                        Body,
+                        ResourceAttributes,
+                        LogAttributes
+                        ) VALUES`
 )
 
 var driverName = "clickhouse" // for testing
@@ -313,7 +341,7 @@ func newClickHouseConn(cfg *Config) (*sql.DB, driver.Conn, error) {
 	// until a Ping, Exec, etc.. is done
 	conn, err := clickhouse.Open(opts)
 	if err != nil {
-		log.Fatal(err)
+		return nil, nil, err
 	}
 	return clickhouse.OpenDB(opts), conn, nil
 }
@@ -356,4 +384,8 @@ func renderCreateLogsTableSQL(cfg *Config) string {
 
 func renderInsertLogsSQL(cfg *Config) string {
 	return fmt.Sprintf(insertLogsSQLTemplate, cfg.LogsTableName)
+}
+
+func renderInlineInsertLogsSQL(cfg *Config) string {
+	return fmt.Sprintf(inlineinsertLogsSQLTemplate, cfg.LogsTableName)
 }

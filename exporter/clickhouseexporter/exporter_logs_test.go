@@ -88,6 +88,63 @@ func TestLogsExporter_New(t *testing.T) {
 
 func TestExporter_pushLogsData(t *testing.T) {
 	t.Run("push success", func(t *testing.T) {
+
+		inlineInsertSQL := renderInlineInsertLogsSQL(withDefaultConfig())
+
+		var serviceName string
+		insertValuesArray := make([]string, 10)
+		resAttr := make(map[string]string)
+		resourceLogs := simpleLogs(10).ResourceLogs()
+		for i := 0; i < resourceLogs.Len(); i++ {
+			logs := resourceLogs.At(i)
+			res := logs.Resource()
+
+			attrs := res.Attributes()
+			attributesToMap(attrs, resAttr)
+
+			if v, ok := attrs.Get(conventions.AttributeServiceName); ok {
+				serviceName = v.Str()
+			}
+
+			for j := 0; j < logs.ScopeLogs().Len(); j++ {
+				rs := logs.ScopeLogs().At(j).LogRecords()
+				for k := 0; k < rs.Len(); k++ {
+					r := rs.At(k)
+
+					logAttr := make(map[string]string, attrs.Len())
+					attributesToMap(r.Attributes(), logAttr)
+
+					values, err := prepareValues(r, serviceName, resAttr, logAttr)
+					require.NoError(t, err)
+					insertValuesArray[k] = values
+				}
+			}
+		}
+		formattedInsertQuery := formatInsert(insertValuesArray, inlineInsertSQL)
+		require.NotEmpty(t, formattedInsertQuery)
+		/*
+			INSERT INTO otel_logs (
+			                        Timestamp,
+			                        TraceId,
+			                        SpanId,
+			                        TraceFlags,
+			                        SeverityText,
+			                        SeverityNumber,
+			                        ServiceName,
+			                        Body,
+			                        ResourceAttributes,
+			                        LogAttributes
+			                        ) VALUES(Tue Mar 28 07:40:28 UTC 2023, , , 0, , 0, , , {}, {"service.name":"v"}),
+			                                 (Tue Mar 28 07:40:28 UTC 2023, , , 0, , 0, , , {}, {"service.name":"v"}),
+			                                 (Tue Mar 28 07:40:28 UTC 2023, , , 0, , 0, , , {}, {"service.name":"v"})
+
+
+		*/
+	})
+}
+
+func TestExporter_prepareValues(t *testing.T) {
+	t.Run("push success", func(t *testing.T) {
 		var items int
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
 			t.Logf(query)
