@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/doug-martin/goqu/v9"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -87,10 +88,7 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 		var serviceName string
 		resAttr := make(map[string]string)
 
-		statement, err := e.nativeClient.PrepareBatch(ctx, e.inlineInsertSQL)
-		if err != nil {
-			return fmt.Errorf("PrepareBatch:%w", err)
-		}
+		values := goqu.Vals{}
 		resourceLogs := ld.ResourceLogs()
 		for i := 0; i < resourceLogs.Len(); i++ {
 			logs := resourceLogs.At(i)
@@ -110,7 +108,16 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 					logAttr := make(map[string]string, attrs.Len())
 					attributesToMap(r.Attributes(), logAttr)
 
-					err := statement.Append(r.Timestamp().AsTime(),
+					resMarshal, err := json.Marshal(resAttr)
+					if err != nil {
+						return err
+					}
+					logMarshal, err := json.Marshal(logAttr)
+					if err != nil {
+						return err
+					}
+
+					vals := goqu.Vals{r.Timestamp().AsTime(),
 						traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
 						traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
 						uint32(r.Flags()),
@@ -118,11 +125,9 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 						int32(r.SeverityNumber()),
 						serviceName,
 						r.Body().AsString(),
-						resAttr,
-						logAttr)
-					if err != nil {
-						return err
-					}
+						resMarshal,
+						logMarshal}
+					values = append(values, vals)
 
 				}
 			}
@@ -133,7 +138,23 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 			}
 		}
 
-		return statement.Send()
+		ds := goqu.Insert(e.cfg.LogsTableName).
+			Cols("Timestamp",
+				"TraceId",
+				"SpanId",
+				"TraceFlags",
+				"SeverityText",
+				"SeverityNumber",
+				"ServiceName",
+				"Body",
+				"ResourceAttributes",
+				"LogAttributes").
+			Vals(values)
+		insertSQL, _, err := ds.ToSQL()
+		if err != nil {
+			return err
+		}
+		return e.nativeClient.AsyncInsert(ctx, insertSQL, false)
 	}()
 
 	duration := time.Since(start)
