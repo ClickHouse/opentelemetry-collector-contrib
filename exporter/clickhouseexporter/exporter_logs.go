@@ -45,7 +45,7 @@ type logsExporter struct {
 }
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
-	client, nativeClient, err := newClickHouseConn(cfg)
+	client, nativeClient, err := newClickHouseConn(cfg, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -289,7 +289,17 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         Body,
                         ResourceAttributes,
                         LogAttributes
-                        ) VALUES`
+                        ) VALUES (
+                                 ?,
+                                 ?,
+                                 ?,
+                                 ?,
+                                 ?,
+                                 ?,
+                                 ?,
+                                 ?,
+                                 ?,
+                                 ?)`
 )
 
 var driverName = "clickhouse" // for testing
@@ -305,7 +315,7 @@ func newClickHouseClient(cfg *Config) (*sql.DB, error) {
 }
 
 // used by logs:
-func newClickHouseConn(cfg *Config) (*sql.DB, driver.Conn, error) {
+func newClickHouseConn(cfg *Config, logger *zap.Logger) (*sql.DB, driver.Conn, error) {
 	endpoint := cfg.Endpoint
 
 	if len(cfg.ConnectionParams) > 0 {
