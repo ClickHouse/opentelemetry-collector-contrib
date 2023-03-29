@@ -87,11 +87,8 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 		var serviceName string
 		resAttr := make(map[string]string)
 
-		statement, err := e.nativeClient.PrepareBatch(ctx, e.inlineInsertSQL)
-		if err != nil {
-			return fmt.Errorf("PrepareBatch:%w", err)
-		}
 		resourceLogs := ld.ResourceLogs()
+		insertValuesArray := make([]string, 0)
 		for i := 0; i < resourceLogs.Len(); i++ {
 			logs := resourceLogs.At(i)
 			res := logs.Resource()
@@ -110,19 +107,12 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 					logAttr := make(map[string]string, attrs.Len())
 					attributesToMap(r.Attributes(), logAttr)
 
-					err := statement.Append(r.Timestamp().AsTime(),
-						traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
-						traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
-						uint32(r.Flags()),
-						r.SeverityText(),
-						int32(r.SeverityNumber()),
-						serviceName,
-						r.Body().AsString(),
-						resAttr,
-						logAttr)
+					values, err := prepareValues(r, serviceName, resAttr, logAttr)
 					if err != nil {
 						return err
 					}
+
+					insertValuesArray = append(insertValuesArray, values)
 
 				}
 			}
@@ -132,8 +122,9 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 				delete(resAttr, k)
 			}
 		}
+		formattedInsertQuery := formatInsert(insertValuesArray, e.inlineInsertSQL)
 
-		return statement.Send()
+		return e.nativeClient.AsyncInsert(ctx, formattedInsertQuery, false)
 	}()
 
 	duration := time.Since(start)
@@ -297,17 +288,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         Body,
                         ResourceAttributes,
                         LogAttributes
-                        ) SETTINGS async_insert=1, wait_for_async_insert=0 VALUES(
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?)`
+                        ) VALUES`
 )
 
 var driverName = "clickhouse" // for testing
@@ -402,7 +383,7 @@ func renderCreateLogsTableSQL(cfg *Config) string {
 }
 
 func renderInsertLogsSQL(cfg *Config) string {
-	return fmt.Sprintf(insertLogsSQLTemplate, cfg.LogsTableName)
+	return fmt.Sprintf(inlineinsertLogsSQLTemplate, cfg.LogsTableName)
 }
 
 func renderInlineInsertLogsSQL(cfg *Config) string {
