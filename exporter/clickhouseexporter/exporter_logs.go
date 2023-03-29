@@ -18,11 +18,13 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/doug-martin/goqu/v9"
@@ -43,6 +45,9 @@ type logsExporter struct {
 
 	logger *zap.Logger
 	cfg    *Config
+
+	wg        *sync.WaitGroup
+	closeChan chan struct{}
 }
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
@@ -58,6 +63,8 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 		inlineInsertSQL: renderInlineInsertLogsSQL(cfg),
 		logger:          logger,
 		cfg:             cfg,
+		wg:              new(sync.WaitGroup),
+		closeChan:       make(chan struct{}),
 	}, nil
 }
 
@@ -74,6 +81,7 @@ func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
 
 // shutdown will shut down the exporter.
 func (e *logsExporter) shutdown(_ context.Context) error {
+	e.wg.Wait()
 	if e.client != nil {
 		return e.client.Close()
 	}
@@ -81,86 +89,94 @@ func (e *logsExporter) shutdown(_ context.Context) error {
 }
 
 func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) error {
+	e.wg.Add(1)
+	defer e.wg.Done()
 	start := time.Now()
+	select {
+	case <-e.closeChan:
+		return errors.New("shutdown has been called")
+	default:
+		err := func() error {
 
-	err := func() error {
+			var serviceName string
+			resAttr := make(map[string]string)
 
-		var serviceName string
-		resAttr := make(map[string]string)
+			values := goqu.Vals{}
+			resourceLogs := ld.ResourceLogs()
+			for i := 0; i < resourceLogs.Len(); i++ {
+				logs := resourceLogs.At(i)
+				res := logs.Resource()
 
-		values := goqu.Vals{}
-		resourceLogs := ld.ResourceLogs()
-		for i := 0; i < resourceLogs.Len(); i++ {
-			logs := resourceLogs.At(i)
-			res := logs.Resource()
+				attrs := res.Attributes()
+				attributesToMap(attrs, resAttr)
 
-			attrs := res.Attributes()
-			attributesToMap(attrs, resAttr)
+				if v, ok := attrs.Get(conventions.AttributeServiceName); ok {
+					serviceName = v.Str()
+				}
+				for j := 0; j < logs.ScopeLogs().Len(); j++ {
+					rs := logs.ScopeLogs().At(j).LogRecords()
+					for k := 0; k < rs.Len(); k++ {
+						r := rs.At(k)
+						if r.Body().AsString() != "" {
+							logAttr := make(map[string]string, attrs.Len())
+							attributesToMap(r.Attributes(), logAttr)
 
-			if v, ok := attrs.Get(conventions.AttributeServiceName); ok {
-				serviceName = v.Str()
-			}
-			for j := 0; j < logs.ScopeLogs().Len(); j++ {
-				rs := logs.ScopeLogs().At(j).LogRecords()
-				for k := 0; k < rs.Len(); k++ {
-					r := rs.At(k)
+							resMarshal, err := json.Marshal(resAttr)
+							if err != nil {
+								return err
+							}
+							logMarshal, err := json.Marshal(logAttr)
+							if err != nil {
+								return err
+							}
 
-					logAttr := make(map[string]string, attrs.Len())
-					attributesToMap(r.Attributes(), logAttr)
+							vals := goqu.Vals{r.Timestamp().AsTime(),
+								traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
+								traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
+								uint32(r.Flags()),
+								r.SeverityText(),
+								int32(r.SeverityNumber()),
+								serviceName,
+								r.Body().AsString(),
+								resMarshal,
+								logMarshal}
 
-					resMarshal, err := json.Marshal(resAttr)
-					if err != nil {
-						return err
+							values = append(values, vals)
+						}
+
 					}
-					logMarshal, err := json.Marshal(logAttr)
-					if err != nil {
-						return err
-					}
+				}
 
-					vals := goqu.Vals{r.Timestamp().AsTime(),
-						traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
-						traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
-						uint32(r.Flags()),
-						r.SeverityText(),
-						int32(r.SeverityNumber()),
-						serviceName,
-						r.Body().AsString(),
-						resMarshal,
-						logMarshal}
-					values = append(values, vals)
-
+				// clear map for reuse
+				for k := range resAttr {
+					delete(resAttr, k)
 				}
 			}
 
-			// clear map for reuse
-			for k := range resAttr {
-				delete(resAttr, k)
+			ds := goqu.Insert(e.cfg.LogsTableName).
+				Cols("Timestamp",
+					"TraceId",
+					"SpanId",
+					"TraceFlags",
+					"SeverityText",
+					"SeverityNumber",
+					"ServiceName",
+					"Body",
+					"ResourceAttributes",
+					"LogAttributes").
+				Vals(values)
+			insertSQL, _, err := ds.ToSQL()
+			if err != nil {
+				return err
 			}
-		}
+			return e.nativeClient.AsyncInsert(ctx, insertSQL, false)
+		}()
 
-		ds := goqu.Insert(e.cfg.LogsTableName).
-			Cols("Timestamp",
-				"TraceId",
-				"SpanId",
-				"TraceFlags",
-				"SeverityText",
-				"SeverityNumber",
-				"ServiceName",
-				"Body",
-				"ResourceAttributes",
-				"LogAttributes").
-			Vals(values)
-		insertSQL, _, err := ds.ToSQL()
-		if err != nil {
-			return err
-		}
-		return e.nativeClient.AsyncInsert(ctx, insertSQL, false)
-	}()
-
-	duration := time.Since(start)
-	e.logger.Info("insert logs", zap.Int("records", ld.LogRecordCount()),
-		zap.String("cost", duration.String()))
-	return err
+		duration := time.Since(start)
+		e.logger.Info("insert logs", zap.Int("records", ld.LogRecordCount()),
+			zap.String("cost", duration.String()))
+		return err
+	}
 }
 
 func formatInsert(insertValuesArray []string, inlineInsertSQL string) string {
