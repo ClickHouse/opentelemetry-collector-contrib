@@ -87,7 +87,7 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 		var serviceName string
 		resAttr := make(map[string]string)
 
-		statement, err := e.nativeClient.PrepareBatch(ctx, e.insertSQL)
+		statement, err := e.nativeClient.PrepareBatch(ctx, e.inlineInsertSQL)
 		if err != nil {
 			return fmt.Errorf("PrepareBatch:%w", err)
 		}
@@ -297,7 +297,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         Body,
                         ResourceAttributes,
                         LogAttributes
-                        ) VALUES`
+                        ) SETTINGS async_insert=1, wait_for_async_insert=0 VALUES`
 )
 
 var driverName = "clickhouse" // for testing
@@ -392,7 +392,7 @@ func renderCreateLogsTableSQL(cfg *Config) string {
 }
 
 func renderInsertLogsSQL(cfg *Config) string {
-	return fmt.Sprintf(inlineinsertLogsSQLTemplate, cfg.LogsTableName)
+	return fmt.Sprintf(insertLogsSQLTemplate, cfg.LogsTableName)
 }
 
 func renderInlineInsertLogsSQL(cfg *Config) string {
