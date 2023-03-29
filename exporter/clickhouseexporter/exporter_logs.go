@@ -297,7 +297,17 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         Body,
                         ResourceAttributes,
                         LogAttributes
-                        ) SETTINGS async_insert=1, wait_for_async_insert=0 VALUES`
+                        ) SETTINGS async_insert=1, wait_for_async_insert=0 VALUES(
+                                 ?,
+                                 ?,
+                                 ?,
+                                 ?,
+                                 ?,
+                                 ?,
+                                 ?,
+                                 ?,
+                                 ?,
+                                 ?)`
 )
 
 var driverName = "clickhouse" // for testing
