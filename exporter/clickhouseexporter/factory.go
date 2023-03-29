@@ -72,7 +72,7 @@ func createLogsExporter(
 		ctx,
 		set,
 		cfg,
-		exporter.pushLogsData,
+		exporter.pushNativeLogsData,
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),

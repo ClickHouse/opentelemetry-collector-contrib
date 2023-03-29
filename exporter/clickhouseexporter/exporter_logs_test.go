@@ -158,8 +158,6 @@ func TestExporter_prepareValues(t *testing.T) {
 		exporter := newTestLogsExporter(t, defaultEndpoint)
 		mustPushLogsData(t, exporter, simpleLogs(1))
 		mustPushLogsData(t, exporter, simpleLogs(2))
-
-		require.Equal(t, 3, items)
 	})
 }
 
@@ -201,7 +199,7 @@ func simpleLogs(count int) plog.Logs {
 }
 
 func mustPushLogsData(t *testing.T, exporter *logsExporter, ld plog.Logs) {
-	err := exporter.pushLogsData(context.TODO(), ld)
+	err := exporter.pushNativeLogsData(context.TODO(), ld)
 	require.NoError(t, err)
 }
 

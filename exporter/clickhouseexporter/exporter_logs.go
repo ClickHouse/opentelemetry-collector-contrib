@@ -45,7 +45,7 @@ type logsExporter struct {
 }
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
-	client, nativeClient, err := newClickHouseConn(cfg, logger)
+	client, nativeClient, err := newClickHouseConn(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -87,8 +87,8 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 		var serviceName string
 		resAttr := make(map[string]string)
 
-		insertValuesArray := make([]string, ld.ResourceLogs().Len())
 		resourceLogs := ld.ResourceLogs()
+		insertValuesArray := make([]string, 0)
 		for i := 0; i < resourceLogs.Len(); i++ {
 			logs := resourceLogs.At(i)
 			res := logs.Resource()
@@ -99,7 +99,6 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 			if v, ok := attrs.Get(conventions.AttributeServiceName); ok {
 				serviceName = v.Str()
 			}
-
 			for j := 0; j < logs.ScopeLogs().Len(); j++ {
 				rs := logs.ScopeLogs().At(j).LogRecords()
 				for k := 0; k < rs.Len(); k++ {
@@ -113,7 +112,7 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 						return err
 					}
 
-					insertValuesArray[k] = values
+					insertValuesArray = append(insertValuesArray, values)
 
 				}
 			}
@@ -136,7 +135,7 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 
 func formatInsert(insertValuesArray []string, inlineInsertSQL string) string {
 	valuesString := strings.Join(insertValuesArray, ",")
-	formattedInsertQuery := inlineInsertSQL + valuesString
+	formattedInsertQuery := inlineInsertSQL + valuesString + " SETTINGS async_insert=1, wait_for_async_insert=0"
 	return formattedInsertQuery
 }
 
@@ -278,7 +277,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         ResourceAttributes,
                         LogAttributes
                         )`
-	inlineinsertLogsSQLTemplate = `INSERT INTO %s SETTINGS async_insert=1, wait_for_async_insert=0 (
+	inlineinsertLogsSQLTemplate = `INSERT INTO %s (
                         Timestamp,
                         TraceId,
                         SpanId,
@@ -289,17 +288,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         Body,
                         ResourceAttributes,
                         LogAttributes
-                        ) VALUES (
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?)`
+                        ) VALUES`
 )
 
 var driverName = "clickhouse" // for testing
@@ -315,7 +304,7 @@ func newClickHouseClient(cfg *Config) (*sql.DB, error) {
 }
 
 // used by logs:
-func newClickHouseConn(cfg *Config, logger *zap.Logger) (*sql.DB, driver.Conn, error) {
+func newClickHouseConn(cfg *Config) (*sql.DB, driver.Conn, error) {
 	endpoint := cfg.Endpoint
 
 	if len(cfg.ConnectionParams) > 0 {
