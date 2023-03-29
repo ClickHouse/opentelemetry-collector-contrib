@@ -278,7 +278,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         ResourceAttributes,
                         LogAttributes
                         )`
-	inlineinsertLogsSQLTemplate = `INSERT INTO %s (
+	inlineinsertLogsSQLTemplate = `INSERT INTO %s SETTINGS async_insert=1, wait_for_async_insert=0 (
                         Timestamp,
                         TraceId,
                         SpanId,
@@ -329,7 +329,7 @@ func newClickHouseConn(cfg *Config, logger *zap.Logger) (*sql.DB, driver.Conn, e
 		} else if !strings.HasSuffix(endpoint, "&") {
 			endpoint += "&"
 		}
-
+		values.Add("debug", "true")
 		endpoint += values.Encode()
 	}
 
@@ -340,6 +340,7 @@ func newClickHouseConn(cfg *Config, logger *zap.Logger) (*sql.DB, driver.Conn, e
 	// TODO config
 	opts.Settings["async_insert"] = 1
 	opts.Settings["wait_for_async_insert"] = 0
+	opts.Debug = true
 
 	opts.Auth = clickhouse.Auth{
 		Database: cfg.Database,
@@ -393,7 +394,7 @@ func renderCreateLogsTableSQL(cfg *Config) string {
 }
 
 func renderInsertLogsSQL(cfg *Config) string {
-	return fmt.Sprintf(insertLogsSQLTemplate, cfg.LogsTableName)
+	return fmt.Sprintf(inlineinsertLogsSQLTemplate, cfg.LogsTableName)
 }
 
 func renderInlineInsertLogsSQL(cfg *Config) string {
