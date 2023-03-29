@@ -87,8 +87,11 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 		var serviceName string
 		resAttr := make(map[string]string)
 
+		statement, err := e.nativeClient.PrepareBatch(ctx, e.insertSQL)
+		if err != nil {
+			return fmt.Errorf("PrepareBatch:%w", err)
+		}
 		resourceLogs := ld.ResourceLogs()
-		insertValuesArray := make([]string, 0)
 		for i := 0; i < resourceLogs.Len(); i++ {
 			logs := resourceLogs.At(i)
 			res := logs.Resource()
@@ -107,12 +110,19 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 					logAttr := make(map[string]string, attrs.Len())
 					attributesToMap(r.Attributes(), logAttr)
 
-					values, err := prepareValues(r, serviceName, resAttr, logAttr)
+					err := statement.Append(r.Timestamp().AsTime(),
+						traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
+						traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
+						uint32(r.Flags()),
+						r.SeverityText(),
+						int32(r.SeverityNumber()),
+						serviceName,
+						r.Body().AsString(),
+						resAttr,
+						logAttr)
 					if err != nil {
 						return err
 					}
-
-					insertValuesArray = append(insertValuesArray, values)
 
 				}
 			}
@@ -122,9 +132,8 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 				delete(resAttr, k)
 			}
 		}
-		formattedInsertQuery := formatInsert(insertValuesArray, e.inlineInsertSQL)
 
-		return e.nativeClient.AsyncInsert(ctx, formattedInsertQuery, false)
+		return statement.Send()
 	}()
 
 	duration := time.Since(start)
