@@ -101,7 +101,17 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 			var serviceName string
 			resAttr := make(map[string]string)
 
-			values := goqu.Vals{}
+			ds := goqu.Insert(e.cfg.LogsTableName).
+				Cols("Timestamp",
+					"TraceId",
+					"SpanId",
+					"TraceFlags",
+					"SeverityText",
+					"SeverityNumber",
+					"ServiceName",
+					"Body",
+					"ResourceAttributes",
+					"LogAttributes")
 			resourceLogs := ld.ResourceLogs()
 			for i := 0; i < resourceLogs.Len(); i++ {
 				logs := resourceLogs.At(i)
@@ -117,32 +127,28 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 					rs := logs.ScopeLogs().At(j).LogRecords()
 					for k := 0; k < rs.Len(); k++ {
 						r := rs.At(k)
-						if r.Body().AsString() != "" {
-							logAttr := make(map[string]string, attrs.Len())
-							attributesToMap(r.Attributes(), logAttr)
+						logAttr := make(map[string]string, attrs.Len())
+						attributesToMap(r.Attributes(), logAttr)
 
-							resMarshal, err := json.Marshal(resAttr)
-							if err != nil {
-								return err
-							}
-							logMarshal, err := json.Marshal(logAttr)
-							if err != nil {
-								return err
-							}
-
-							vals := goqu.Vals{r.Timestamp().AsTime(),
-								traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
-								traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
-								uint32(r.Flags()),
-								r.SeverityText(),
-								int32(r.SeverityNumber()),
-								serviceName,
-								r.Body().AsString(),
-								resMarshal,
-								logMarshal}
-
-							values = append(values, vals)
+						resMarshal, err := json.Marshal(attrs)
+						if err != nil {
+							return err
 						}
+						logMarshal, err := json.Marshal(r.Attributes())
+						if err != nil {
+							return err
+						}
+
+						ds = ds.Vals(goqu.Vals{r.Timestamp().AsTime().Unix(),
+							traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
+							traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
+							uint32(r.Flags()),
+							r.SeverityText(),
+							int32(r.SeverityNumber()),
+							serviceName,
+							r.Body().AsString(),
+							resMarshal,
+							logMarshal})
 
 					}
 				}
@@ -153,23 +159,11 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 				}
 			}
 
-			ds := goqu.Insert(e.cfg.LogsTableName).
-				Cols("Timestamp",
-					"TraceId",
-					"SpanId",
-					"TraceFlags",
-					"SeverityText",
-					"SeverityNumber",
-					"ServiceName",
-					"Body",
-					"ResourceAttributes",
-					"LogAttributes").
-				Vals(values)
 			insertSQL, _, err := ds.ToSQL()
 			if err != nil {
 				return err
 			}
-			return e.nativeClient.AsyncInsert(ctx, insertSQL, false)
+			return e.nativeClient.AsyncInsert(ctx, insertSQL, true)
 		}()
 
 		duration := time.Since(start)
