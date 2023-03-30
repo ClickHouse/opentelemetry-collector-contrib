@@ -57,14 +57,13 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 	}
 
 	return &logsExporter{
-		client:          client,
-		nativeClient:    nativeClient,
-		insertSQL:       renderInsertLogsSQL(cfg),
-		inlineInsertSQL: renderInlineInsertLogsSQL(cfg),
-		logger:          logger,
-		cfg:             cfg,
-		wg:              new(sync.WaitGroup),
-		closeChan:       make(chan struct{}),
+		client:       client,
+		nativeClient: nativeClient,
+		insertSQL:    renderInsertLogsSQL(cfg),
+		logger:       logger,
+		cfg:          cfg,
+		wg:           new(sync.WaitGroup),
+		closeChan:    make(chan struct{}),
 	}, nil
 }
 
@@ -171,12 +170,6 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 			zap.String("cost", duration.String()))
 		return err
 	}
-}
-
-func formatInsert(insertValuesArray []string, inlineInsertSQL string) string {
-	valuesString := strings.Join(insertValuesArray, ",")
-	formattedInsertQuery := inlineInsertSQL + valuesString + " SETTINGS async_insert=1, wait_for_async_insert=0"
-	return formattedInsertQuery
 }
 
 func prepareValues(r plog.LogRecord, serviceName string, resAttr map[string]string, logAttr map[string]string) (string, error) {
@@ -317,28 +310,6 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         ResourceAttributes,
                         LogAttributes
                         )`
-	inlineinsertLogsSQLTemplate = `INSERT INTO %s (
-                        Timestamp,
-                        TraceId,
-                        SpanId,
-                        TraceFlags,
-                        SeverityText,
-                        SeverityNumber,
-                        ServiceName,
-                        Body,
-                        ResourceAttributes,
-                        LogAttributes
-                        ) SETTINGS async_insert=1, wait_for_async_insert=0 VALUES(
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?)`
 )
 
 var driverName = "clickhouse" // for testing
@@ -376,10 +347,6 @@ func newClickHouseConn(cfg *Config) (*sql.DB, driver.Conn, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to parse endpoint: %w", err)
 	}
-	// TODO config
-	opts.Settings["async_insert"] = 1
-	opts.Settings["wait_for_async_insert"] = 0
-	opts.Debug = true
 
 	opts.Auth = clickhouse.Auth{
 		Database: cfg.Database,
@@ -434,8 +401,4 @@ func renderCreateLogsTableSQL(cfg *Config) string {
 
 func renderInsertLogsSQL(cfg *Config) string {
 	return fmt.Sprintf(insertLogsSQLTemplate, cfg.LogsTableName)
-}
-
-func renderInlineInsertLogsSQL(cfg *Config) string {
-	return fmt.Sprintf(inlineinsertLogsSQLTemplate, cfg.LogsTableName)
 }
