@@ -163,7 +163,7 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 			if err != nil {
 				return err
 			}
-			return e.nativeClient.AsyncInsert(ctx, insertSQL, true)
+			return e.nativeClient.AsyncInsert(ctx, insertSQL, false)
 		}()
 
 		duration := time.Since(start)
