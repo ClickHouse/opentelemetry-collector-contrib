@@ -172,30 +172,6 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 	}
 }
 
-func prepareValues(r plog.LogRecord, serviceName string, resAttr map[string]string, logAttr map[string]string) (string, error) {
-	resAttrString, err := json.Marshal(resAttr)
-	if err != nil {
-		return "", err
-	}
-	logAttrString, err := json.Marshal(logAttr)
-	if err != nil {
-		return "", err
-	}
-
-	values := fmt.Sprintf(`(%s, %s, %s, %d, %s, %d, %s, %s, %s, %s)`, r.Timestamp().AsTime().Format(time.UnixDate),
-		traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
-		traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
-		uint32(r.Flags()),
-		r.SeverityText(),
-		int32(r.SeverityNumber()),
-		serviceName,
-		r.Body().AsString(),
-		string(resAttrString),
-		string(logAttrString))
-
-	return values, nil
-}
-
 func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	start := time.Now()
 	err := func() error {
