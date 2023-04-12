@@ -117,7 +117,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					fallthrough
 				case conventions.AttributeCloudRegion:
 					region = value.Str()
-				case  conventions.AttributeCloudProvider:
+				case conventions.AttributeCloudProvider:
 					cloudProvider = value.Str()
 				case "cell":
 					cell = value.Str()
