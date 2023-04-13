@@ -92,6 +92,8 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 		var region string
 		var cloudProvider string
 		var cell string
+		// TODO remove noop
+		cell = "unset"
 
 		resAttr := make(map[string]string)
 
