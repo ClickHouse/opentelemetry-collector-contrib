@@ -47,12 +47,19 @@ type Manager struct {
 
 	knownFiles []*Reader
 	seenPaths  map[string]struct{}
+
+	bufs sync.Pool
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
 	m.persister = persister
+	m.bufs = sync.Pool{
+		New: func() any {
+			return new(bytes.Buffer)
+		},
+	}
 
 	// Load offsets from disk
 	if err := m.loadLastPollFiles(ctx); err != nil {
@@ -304,8 +311,11 @@ const knownFilesKey = "knownFiles"
 
 // syncLastPollFiles syncs the most recent set of files to the database
 func (m *Manager) syncLastPollFiles(ctx context.Context) {
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
+	buf := m.bufs.Get().(*bytes.Buffer)
+	buf.Reset()
+
+	enc := json.NewEncoder(buf)
+	defer m.bufs.Put(buf)
 
 	// Encode the number of known files
 	if err := enc.Encode(len(m.knownFiles)); err != nil {
