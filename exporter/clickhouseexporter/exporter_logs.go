@@ -101,6 +101,8 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 			res := logs.Resource()
 
 			attrs := res.Attributes()
+			logAttr := make(map[string]string)
+
 			attributesToMap(attrs, resAttr)
 
 			attrs.Range(func(key string, value pcommon.Value) bool {
@@ -113,9 +115,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					containerName = value.AsString()
 				// TODO use AttributeCloudRegion 'cloud.region'
 				// https://github.com/ClickHouse/data-plane-application/issues/4155
-				case "region":
-					fallthrough
-				case conventions.AttributeCloudRegion:
+				case "region", conventions.AttributeCloudRegion:
 					region = value.AsString()
 				case conventions.AttributeCloudProvider:
 					cloudProvider = value.AsString()
@@ -124,12 +124,15 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 				}
 				return true
 			})
-			for j := 0; j < logs.ScopeLogs().Len(); j++ {
-				rs := logs.ScopeLogs().At(j).LogRecords()
+
+			scopeLogs := logs.ScopeLogs()
+
+			for j := 0; j < scopeLogs.Len(); j++ {
+				rs := scopeLogs.At(j).LogRecords()
+
 				for k := 0; k < rs.Len(); k++ {
 					r := rs.At(k)
 
-					logAttr := make(map[string]string, attrs.Len())
 					attributesToMap(r.Attributes(), logAttr)
 
 					_, err = batch.Exec(
@@ -154,11 +157,6 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					}
 				}
 			}
-
-			// clear map for reuse
-			for k := range resAttr {
-				delete(resAttr, k)
-			}
 		}
 
 		return scope.Commit()
@@ -171,6 +169,11 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 }
 
 func attributesToMap(attributes pcommon.Map, dest map[string]string) {
+	// clear map before use
+	for k := range dest {
+		delete(dest, k)
+	}
+
 	attributes.Range(func(k string, v pcommon.Value) bool {
 		dest[k] = v.AsString()
 		return true
