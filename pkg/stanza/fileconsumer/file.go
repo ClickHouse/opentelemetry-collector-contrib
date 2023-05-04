@@ -55,11 +55,6 @@ func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
 	m.persister = persister
-	m.bufs = sync.Pool{
-		New: func() any {
-			return new(bytes.Buffer)
-		},
-	}
 
 	// Load offsets from disk
 	if err := m.loadLastPollFiles(ctx); err != nil {
@@ -94,6 +89,12 @@ func (m *Manager) Stop() error {
 // startPoller kicks off a goroutine that will poll the filesystem periodically,
 // checking if there are new files or new logs in the watched files
 func (m *Manager) startPoller(ctx context.Context) {
+	m.bufs = sync.Pool{
+		New: func() any {
+			return new(bytes.Buffer)
+		},
+	}
+
 	m.wg.Add(1)
 	go func() {
 		defer m.wg.Done()
