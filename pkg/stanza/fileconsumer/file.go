@@ -51,10 +51,15 @@ type Manager struct {
 	bufs sync.Pool
 }
 
+func newBuffer() any {
+	return new(*bytes.Buffer)
+}
+
 func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
 	m.persister = persister
+	m.bufs.New = newBuffer
 
 	// Load offsets from disk
 	if err := m.loadLastPollFiles(ctx); err != nil {
@@ -89,12 +94,6 @@ func (m *Manager) Stop() error {
 // startPoller kicks off a goroutine that will poll the filesystem periodically,
 // checking if there are new files or new logs in the watched files
 func (m *Manager) startPoller(ctx context.Context) {
-	m.bufs = sync.Pool{
-		New: func() any {
-			return new(bytes.Buffer)
-		},
-	}
-
 	m.wg.Add(1)
 	go func() {
 		defer m.wg.Done()
@@ -115,6 +114,11 @@ func (m *Manager) startPoller(ctx context.Context) {
 
 // poll checks all the watched paths for new entries
 func (m *Manager) poll(ctx context.Context) {
+	// for tests
+	if m.bufs.New == nil {
+		m.bufs.New = newBuffer
+	}
+
 	// Increment the generation on all known readers
 	// This is done here because the next generation is about to start
 	for i := 0; i < len(m.knownFiles); i++ {
