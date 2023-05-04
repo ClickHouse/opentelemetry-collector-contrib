@@ -52,7 +52,7 @@ type Manager struct {
 }
 
 func newBuffer() any {
-	return new(*bytes.Buffer)
+	return new(bytes.Buffer)
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
