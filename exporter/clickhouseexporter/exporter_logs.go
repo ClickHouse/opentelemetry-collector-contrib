@@ -363,7 +363,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         ResourceAttributes,
                         LogAttributes
                         )`
-	inlineinsertLogsSQLTemplate = `INSERT INTO %s SETTINGS async_insert=1, wait_for_async_insert=1 (
+	inlineinsertLogsSQLTemplate = `INSERT INTO %s SETTINGS async_insert=1, wait_for_async_insert=0 (
                         Timestamp,
                         TraceId,
                         SpanId,
