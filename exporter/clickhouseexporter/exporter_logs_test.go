@@ -114,7 +114,7 @@ func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsEx
 	require.NoError(t, err)
 	require.NoError(t, exporter.start(context.TODO(), nil))
 
-	t.Cleanup(func() { _ = exporter.shutdown(context.TODO()) })
+	//t.Cleanup(func() { _ = exporter.shutdown(context.TODO()) })
 	return exporter
 }
 

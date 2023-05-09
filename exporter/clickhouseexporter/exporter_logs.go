@@ -98,6 +98,12 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 		err := func() error {
 
 			var serviceName string
+			var podName string
+			var containerName string
+			var region string
+			var cloudProvider string
+			var cell string
+
 			resAttr := make(map[string]string)
 
 			ds := goqu.Insert(e.cfg.LogsTableName).
@@ -109,6 +115,11 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 					"SeverityNumber",
 					"ServiceName",
 					"Body",
+					"PodName",
+					"ContainerName",
+					"Region",
+					"CloudProvider",
+					"Cell",
 					"ResourceAttributes",
 					"LogAttributes")
 			resourceLogs := ld.ResourceLogs()
@@ -118,6 +129,28 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 
 				attrs := res.Attributes()
 				attributesToMap(attrs, resAttr)
+
+				attrs.Range(func(key string, value pcommon.Value) bool {
+					switch key {
+					case conventions.AttributeServiceName:
+						serviceName = value.Str()
+					case conventions.AttributeK8SPodName:
+						podName = value.AsString()
+					case conventions.AttributeK8SContainerName:
+						containerName = value.AsString()
+					// TODO use AttributeCloudRegion 'cloud.region'
+					// https://github.com/ClickHouse/data-plane-application/issues/4155
+					case "region":
+						fallthrough
+					case conventions.AttributeCloudRegion:
+						region = value.AsString()
+					case conventions.AttributeCloudProvider:
+						cloudProvider = value.AsString()
+					case "cell":
+						cell = value.AsString()
+					}
+					return true
+				})
 
 				if v, ok := attrs.Get(conventions.AttributeServiceName); ok {
 					serviceName = v.Str()
@@ -146,6 +179,11 @@ func (e *logsExporter) pushNativeLogsData(ctx context.Context, ld plog.Logs) err
 							int32(r.SeverityNumber()),
 							serviceName,
 							r.Body().AsString(),
+							podName,
+							containerName,
+							region,
+							cloudProvider,
+							cell,
 							resMarshal,
 							logMarshal})
 
@@ -185,6 +223,12 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 		}
 
 		var serviceName string
+		var podName string
+		var containerName string
+		var region string
+		var cloudProvider string
+		var cell string
+
 		resAttr := make(map[string]string)
 
 		resourceLogs := ld.ResourceLogs()
@@ -195,9 +239,27 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 			attrs := res.Attributes()
 			attributesToMap(attrs, resAttr)
 
-			if v, ok := attrs.Get(conventions.AttributeServiceName); ok {
-				serviceName = v.Str()
-			}
+			attrs.Range(func(key string, value pcommon.Value) bool {
+				switch key {
+				case conventions.AttributeServiceName:
+					serviceName = value.Str()
+				case conventions.AttributeK8SPodName:
+					podName = value.AsString()
+				case conventions.AttributeK8SContainerName:
+					containerName = value.AsString()
+				// TODO use AttributeCloudRegion 'cloud.region'
+				// https://github.com/ClickHouse/data-plane-application/issues/4155
+				case "region":
+					fallthrough
+				case conventions.AttributeCloudRegion:
+					region = value.AsString()
+				case conventions.AttributeCloudProvider:
+					cloudProvider = value.AsString()
+				case "cell":
+					cell = value.AsString()
+				}
+				return true
+			})
 			for j := 0; j < logs.ScopeLogs().Len(); j++ {
 				rs := logs.ScopeLogs().At(j).LogRecords()
 				for k := 0; k < rs.Len(); k++ {
@@ -215,6 +277,11 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 						int32(r.SeverityNumber()),
 						serviceName,
 						r.Body().AsString(),
+						podName,
+						containerName,
+						region,
+						cloudProvider,
+						cell,
 						resAttr,
 						logAttr,
 					)
@@ -257,7 +324,12 @@ CREATE TABLE IF NOT EXISTS %s (
      SeverityText LowCardinality(String) CODEC(ZSTD(1)),
      SeverityNumber Int32 CODEC(ZSTD(1)),
      ServiceName LowCardinality(String) CODEC(ZSTD(1)),
-     Body String CODEC(ZSTD(1)),
+     Body LowCardinality(String) CODEC(ZSTD(1)),
+     PodName LowCardinality(String),
+     ContainerName LowCardinality(String),
+     Region LowCardinality(String),
+     CloudProvider LowCardinality(String),
+     Cell LowCardinality(String),
      ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
      LogAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
      INDEX idx_trace_id TraceId TYPE bloom_filter(0.001) GRANULARITY 1,
@@ -268,8 +340,8 @@ CREATE TABLE IF NOT EXISTS %s (
      INDEX idx_body Body TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 1
 ) ENGINE MergeTree()
 %s
-PARTITION BY toDate(Timestamp)
-ORDER BY (ServiceName, SeverityText, toUnixTimestamp(Timestamp), TraceId)
+PARTITION BY toYYYYMM(Timestamp)
+ORDER BY (PodName, ContainerName, SeverityText, Timestamp)
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 
@@ -283,9 +355,31 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         SeverityNumber,
                         ServiceName,
                         Body,
+                        PodName,
+						ContainerName,
+						Region,
+						CloudProvider,
+						Cell,
                         ResourceAttributes,
                         LogAttributes
                         )`
+	inlineinsertLogsSQLTemplate = `INSERT INTO %s SETTINGS async_insert=1, wait_for_async_insert=1 (
+                        Timestamp,
+                        TraceId,
+                        SpanId,
+                        TraceFlags,
+                        SeverityText,
+                        SeverityNumber,
+                        ServiceName,
+                        Body,
+                        PodName,
+						ContainerName,
+						Region,
+						CloudProvider,
+						Cell,
+                        ResourceAttributes,
+                        LogAttributes
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 )
 
 var driverName = "clickhouse" // for testing
@@ -376,5 +470,5 @@ func renderCreateLogsTableSQL(cfg *Config) string {
 }
 
 func renderInsertLogsSQL(cfg *Config) string {
-	return fmt.Sprintf(insertLogsSQLTemplate, cfg.LogsTableName)
+	return fmt.Sprintf(inlineinsertLogsSQLTemplate, cfg.LogsTableName)
 }
