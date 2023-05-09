@@ -374,7 +374,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package_type: ["deb", "rpm"]
+        package_type: ["rpm"]
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
