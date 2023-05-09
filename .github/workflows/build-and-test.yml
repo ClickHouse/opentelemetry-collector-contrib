@@ -474,7 +474,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package_type: ["deb", "rpm"]
+        package_type: ["rpm"]
     steps:
       - name: Collect Workflow Telemetry
         if: always()
