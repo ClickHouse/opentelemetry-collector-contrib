@@ -478,7 +478,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mongodb-forks/digest v1.0.4 // indirect
 	github.com/montanaflynn/stats v0.6.6 // indirect
-	github.com/mostynb/go-grpc-compression v1.1.17 // indirect
+	github.com/mostynb/go-grpc-compression v1.1.18 // indirect
 	github.com/mrunalp/fileutils v0.5.0 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
@@ -1068,3 +1068,27 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/span
 replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
 
 replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
+
+replace go.opentelemetry.io/collector => github.com/ClickHouse/opentelemetry-collector v0.0.0-20230511114248-207dcd00c0cf
+
+replace go.opentelemetry.io/collector/component => github.com/ClickHouse/opentelemetry-collector/component v0.0.0-20230511114248-207dcd00c0cf
+
+replace go.opentelemetry.io/collector/connector/forwardconnector => github.com/ClickHouse/opentelemetry-collector/connector/forwardconnector v0.0.0-20230511114248-207dcd00c0cf
+
+replace go.opentelemetry.io/collector/exporter => github.com/ClickHouse/opentelemetry-collector/exporter v0.0.0-20230511114248-207dcd00c0cf
+
+replace go.opentelemetry.io/collector/exporter/loggingexporter => github.com/ClickHouse/opentelemetry-collector/exporter/loggingexporter v0.0.0-20230511114248-207dcd00c0cf
+
+replace go.opentelemetry.io/collector/exporter/otlpexporter => github.com/ClickHouse/opentelemetry-collector/exporter/otlpexporter v0.0.0-20230511114248-207dcd00c0cf
+
+replace go.opentelemetry.io/collector/exporter/otlphttpexporter => github.com/ClickHouse/opentelemetry-collector/exporter/otlphttpexporter v0.0.0-20230511114248-207dcd00c0cf
+
+replace go.opentelemetry.io/collector/extension/ballastextension => github.com/ClickHouse/opentelemetry-collector/extension/ballastextension v0.0.0-20230511114248-207dcd00c0cf
+
+replace go.opentelemetry.io/collector/extension/zpagesextension => github.com/ClickHouse/opentelemetry-collector/extension/zpagesextension v0.0.0-20230511114248-207dcd00c0cf
+
+replace go.opentelemetry.io/collector/processor/batchprocessor => github.com/ClickHouse/opentelemetry-collector/processor/batchprocessor v0.0.0-20230511114248-207dcd00c0cf
+
+replace go.opentelemetry.io/collector/processor/memorylimiterprocessor => github.com/ClickHouse/opentelemetry-collector/processor/memorylimiterprocessor v0.0.0-20230511114248-207dcd00c0cf
+
+replace go.opentelemetry.io/collector/receiver => github.com/ClickHouse/opentelemetry-collector/receiver v0.0.0-20230511114248-207dcd00c0cf
