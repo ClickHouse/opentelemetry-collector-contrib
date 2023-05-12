@@ -76,6 +76,7 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 		resAttr := make(map[string]string, res.Attributes().Len())
 		attributesToMap(metrics.Resource().Attributes(), resAttr)
 
+
 		for j := 0; j < metrics.ScopeMetrics().Len(); j++ {
 			rs := metrics.ScopeMetrics().At(j).Metrics()
 			scopeInstr := metrics.ScopeMetrics().At(j).Scope()
