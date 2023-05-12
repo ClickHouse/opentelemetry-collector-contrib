@@ -1,6 +1,5 @@
 ---
 
-
 <p align="center">
   <strong>
     <a href="https://opentelemetry.io/docs/collector/getting-started/">Getting Started</a>
