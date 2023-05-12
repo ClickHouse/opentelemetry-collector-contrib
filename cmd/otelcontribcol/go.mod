@@ -173,6 +173,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.77.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor v0.74.0
 	github.com/prometheus/prometheus v0.43.1
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector v0.77.0
@@ -1049,6 +1050,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokir
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver => ../../receiver/filestatsreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter => ../../exporter/awss3exporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor => ../../processor/logstransformprocessor
 
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
 

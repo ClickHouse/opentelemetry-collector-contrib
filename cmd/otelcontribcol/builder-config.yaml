@@ -78,8 +78,6 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.77.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.77.0
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.77.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.77.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.77.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.77.0
@@ -88,6 +86,7 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.77.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.77.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.77.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor v0.77.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.77.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.77.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.77.0
@@ -100,6 +99,8 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.77.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.77.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.77.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.77.0
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.77.0
 
 receivers:
   - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.77.0
@@ -385,6 +386,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver => ../../receiver/lokireceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver => ../../receiver/filestatsreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter => ../../exporter/awss3exporter
+  - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor => ../../processor/logstransformprocessor
   # see https://github.com/mattn/go-ieproxy/issues/45
   - github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
@@ -394,4 +396,3 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector => ../../connector/spanmetricsconnector
   - github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
   - github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
-
