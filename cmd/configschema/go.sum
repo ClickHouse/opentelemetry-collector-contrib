@@ -2021,8 +2021,9 @@ github.com/montanaflynn/stats v0.6.6/go.mod h1:etXPPgVO6n31NxCd9KQUMvCM+ve0ruNzt
 github.com/moricho/tparallel v0.2.1/go.mod h1:fXEIZxG2vdfl0ZF8b42f5a78EhjjD5mX8qUplsoSU4k=
 github.com/morikuni/aec v1.0.0 h1:nP9CBfwrvYnBRgY6qfDQkygYDmYwOilePFkwzv4dU8A=
 github.com/morikuni/aec v1.0.0/go.mod h1:BbKIizmSmc5MMPqRYbxO4ZU0S0+P200+tUnFx7PXmsc=
-github.com/mostynb/go-grpc-compression v1.1.17 h1:N9t6taOJN3mNTTi0wDf4e3lp/G/ON1TP67Pn0vTUA9I=
 github.com/mostynb/go-grpc-compression v1.1.17/go.mod h1:FUSBr0QjKqQgoDG/e0yiqlR6aqyXC39+g/hFLDfSsEY=
+github.com/mostynb/go-grpc-compression v1.1.18 h1:4a9UFaq3GvZO64ZRWPhxbJhAMsbDNIGznsSA3v1oO8U=
+github.com/mostynb/go-grpc-compression v1.1.18/go.mod h1:U/0nmev+iFgBJ/jsVEeJi4UzoGrixmDcsfmMB6JsROg=
 github.com/mozilla/tls-observatory v0.0.0-20190404164649-a3c1b6cfecfd/go.mod h1:SrKMQvPiws7F7iqYp8/TX+IhxCYhzr6N/1yb8cwHsGk=
 github.com/mozilla/tls-observatory v0.0.0-20201209171846-0547674fceff/go.mod h1:SrKMQvPiws7F7iqYp8/TX+IhxCYhzr6N/1yb8cwHsGk=
 github.com/mrunalp/fileutils v0.5.0 h1:NKzVxiH7eSk+OQ4M+ZYW1K6h27RUV3MI6NUTsHhU6Z4=

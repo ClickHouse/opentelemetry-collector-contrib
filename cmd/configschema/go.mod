@@ -480,7 +480,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mongodb-forks/digest v1.0.4 // indirect
 	github.com/montanaflynn/stats v0.6.6 // indirect
-	github.com/mostynb/go-grpc-compression v1.1.17 // indirect
+	github.com/mostynb/go-grpc-compression v1.1.18 // indirect
 	github.com/mrunalp/fileutils v0.5.0 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
