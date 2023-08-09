@@ -88,6 +88,12 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					spanAttr := make(map[string]string, attrs.Len())
 					attributesToMap(attrs, spanAttr)
 
+					if spans.ScopeSpans().At(j).Scope().Name() != "" {
+						spanAttr[conventions.AttributeOtelScopeName] = spans.ScopeSpans().At(j).Scope().Name()
+					}
+					if spans.ScopeSpans().At(j).Scope().Version() != "" {
+						spanAttr[conventions.AttributeOtelScopeVersion] = spans.ScopeSpans().At(j).Scope().Version()
+					}
 					status := r.Status()
 					eventTimes, eventNames, eventAttrs := convertEvents(r.Events())
 					linksTraceIDs, linksSpanIDs, linksTraceStates, linksAttrs := convertLinks(r.Links())

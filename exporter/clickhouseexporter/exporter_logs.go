@@ -224,12 +224,12 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 						Region,
 						CloudProvider,
 						Cell,
-                        ResourceAttributes,
-                        ScopeSchemaUrl,
-                        ScopeName,
-                        ScopeVersion,
-                        ScopeAttributes,
-                        LogAttributes
+            ResourceAttributes,
+            ScopeSchemaUrl,
+            ScopeName,
+            ScopeVersion,
+            ScopeAttributes,
+            LogAttributes
                         )`
 	inlineinsertLogsSQLTemplate = `INSERT INTO %s SETTINGS async_insert=1, wait_for_async_insert=0 (
                         Timestamp,
@@ -241,10 +241,10 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         ServiceName,
                         Body,
                         PodName,
-						ContainerName,
-						Region,
-						CloudProvider,
-						Cell,
+                        ContainerName,
+                        Region,
+                        CloudProvider,
+                        Cell,
                         ResourceAttributes,
                         LogAttributes
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
