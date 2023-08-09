@@ -115,7 +115,8 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 				scopeURL := logs.ScopeLogs().At(j).SchemaUrl()
 				scopeName := logs.ScopeLogs().At(j).Scope().Name()
 				scopeVersion := logs.ScopeLogs().At(j).Scope().Version()
-				scopeAttr := attributesToMap(logs.ScopeLogs().At(j).Scope().Attributes())
+				scopeAttr := make(map[string]string)
+				attributesToMap(logs.ScopeLogs().At(j).Scope().Attributes(), scopeAttr)
 				for k := 0; k < rs.Len(); k++ {
 					r := rs.At(k)
 
