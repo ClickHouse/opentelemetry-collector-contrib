@@ -477,6 +477,32 @@ jobs:
       - name: Validate Docker Image
         run: |
           docker run 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:${{ steps.create-version.outputs.BUILD_VERSION }} --version
+      - id: login-gcp
+        name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          token_format: access_token
+          workload_identity_provider: ${{secrets.GCR_WORKLOAD_IDENTITY_PROVIDER}}
+          service_account: ${{secrets.GCR_SERVICE_ACCOUNT}}
+          access_token_lifetime: 1800s
+      - name: Login to us Artifact Registry
+        uses: docker/login-action@v2
+        with:
+          registry: us-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.login-gcp.outputs.access_token }}
+      - name: Login to eu Artifact Registry
+        uses: docker/login-action@v2
+        with:
+          registry: europe-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.login-gcp.outputs.access_token }}
+      - name: Login to asia Artifact Registry
+        uses: docker/login-action@v2
+        with:
+          registry: asia-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.login-gcp.outputs.access_token }}
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
@@ -489,3 +515,17 @@ jobs:
       - name: Push Docker Image
         run: |
           docker push 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:${{ steps.create-version.outputs.BUILD_VERSION }}
+      - name: Push image to GCP
+        env:
+          DOCKER_IMAGE: otelcontribcol
+          BUILD_VERSION: ${{steps.create-version.outputs.BUILD_VERSION}}
+          GCR_ASIA_IMAGE: ${{secrets.GCR_ASIA_IMAGE}}
+          GCR_EUROPE_IMAGE: ${{secrets.GCR_EUROPE_IMAGE}}
+          GCR_US_IMAGE: ${{secrets.GCR_US_IMAGE}}
+        run: |
+          docker tag $DOCKER_IMAGE:latest ${GCR_ASIA_IMAGE}:${BUILD_VERSION}
+          docker tag $DOCKER_IMAGE:latest ${GCR_EUROPE_IMAGE}:${BUILD_VERSION}
+          docker tag $DOCKER_IMAGE:latest ${GCR_US_IMAGE}:${BUILD_VERSION}
+          docker push -a ${GCR_ASIA_IMAGE}
+          docker push -a ${GCR_EUROPE_IMAGE}
+          docker push -a ${GCR_US_IMAGE}
