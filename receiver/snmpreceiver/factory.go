@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
 
@@ -44,6 +33,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: defaultCollectionInterval,
+			Timeout:            defaultTimeout,
 		},
 		Endpoint:      defaultEndpoint,
 		Version:       defaultVersion,
@@ -79,7 +69,7 @@ func createMetricsReceiver(
 	return scraperhelper.NewScraperControllerReceiver(&snmpConfig.ScraperControllerSettings, params, consumer, scraperhelper.AddScraper(scraper))
 }
 
-// addMissingConfigDefaults adds any missing comfig parameters that have defaults
+// addMissingConfigDefaults adds any missing config parameters that have defaults
 func addMissingConfigDefaults(cfg *Config) error {
 	// Add the schema prefix to the endpoint if it doesn't contain one
 	if !strings.Contains(cfg.Endpoint, "://") {

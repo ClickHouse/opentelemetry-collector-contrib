@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 
@@ -142,10 +131,12 @@ func (c *postgreSQLClient) Close() error {
 type databaseStats struct {
 	transactionCommitted int64
 	transactionRollback  int64
+	deadlocks            int64
+	tempFiles            int64
 }
 
 func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error) {
-	query := filterQueryByDatabases("SELECT datname, xact_commit, xact_rollback FROM pg_stat_database", databases, false)
+	query := filterQueryByDatabases("SELECT datname, xact_commit, xact_rollback, deadlocks, temp_files FROM pg_stat_database", databases, false)
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
@@ -154,8 +145,8 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 	dbStats := map[databaseName]databaseStats{}
 	for rows.Next() {
 		var datname string
-		var transactionCommitted, transactionRollback int64
-		err = rows.Scan(&datname, &transactionCommitted, &transactionRollback)
+		var transactionCommitted, transactionRollback, deadlocks, tempFiles int64
+		err = rows.Scan(&datname, &transactionCommitted, &transactionRollback, &deadlocks, &tempFiles)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -164,6 +155,8 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 			dbStats[databaseName(datname)] = databaseStats{
 				transactionCommitted: transactionCommitted,
 				transactionRollback:  transactionRollback,
+				deadlocks:            deadlocks,
+				tempFiles:            tempFiles,
 			}
 		}
 	}
@@ -229,6 +222,7 @@ type tableStats struct {
 	upd         int64
 	del         int64
 	hotUpd      int64
+	seqScans    int64
 	size        int64
 	vacuumCount int64
 }
@@ -241,6 +235,7 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 	n_tup_upd AS upd,
 	n_tup_del AS del,
 	n_tup_hot_upd AS hot_upd,
+	seq_scan AS seq_scans,
 	pg_relation_size(relid) AS table_size,
 	vacuum_count
 	FROM pg_stat_user_tables;`
@@ -253,8 +248,8 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 	}
 	for rows.Next() {
 		var table string
-		var live, dead, ins, upd, del, hotUpd, tableSize, vacuumCount int64
-		err = rows.Scan(&table, &live, &dead, &ins, &upd, &del, &hotUpd, &tableSize, &vacuumCount)
+		var live, dead, ins, upd, del, hotUpd, seqScans, tableSize, vacuumCount int64
+		err = rows.Scan(&table, &live, &dead, &ins, &upd, &del, &hotUpd, &seqScans, &tableSize, &vacuumCount)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
@@ -267,6 +262,7 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 			upd:         upd,
 			del:         del,
 			hotUpd:      hotUpd,
+			seqScans:    seqScans,
 			size:        tableSize,
 			vacuumCount: vacuumCount,
 		}

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusreceiver
 
@@ -18,8 +7,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -52,15 +39,12 @@ func TestMetricNormalize(t *testing.T) {
 			pages: []mockPrometheusResponse{
 				{code: 200, data: normalizeMetric, useOpenMetrics: true},
 			},
-			validateFunc: verifyNormalizeMetric,
+			normalizedName: true,
+			validateFunc:   verifyNormalizeMetric,
 		},
 	}
 
-	registry := featuregate.NewRegistry()
-	_, err := registry.Register("pkg.translator.prometheus.NormalizeName", featuregate.StageBeta)
-	require.NoError(t, err)
-
-	testComponent(t, targets, false, "", registry)
+	testComponent(t, targets, false, true, "")
 }
 
 func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
@@ -77,6 +61,7 @@ func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric
 	e1 := []testExpectation{
 		assertMetricPresent("http_connected",
 			compareMetricType(pmetric.MetricTypeSum),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -95,6 +80,7 @@ func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric
 			}),
 		assertMetricPresent("foo_gauge_total",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -113,6 +99,7 @@ func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric
 			}),
 		assertMetricPresent("http_connection_duration",
 			compareMetricType(pmetric.MetricTypeSum),
+			compareMetricUnit("s"),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -131,6 +118,7 @@ func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric
 			}),
 		assertMetricPresent("foo_gauge",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit("s"),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -148,5 +136,5 @@ func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric
 				},
 			}),
 	}
-	doCompare(t, "scrape-metricNormalize-1", wantAttributes, m1, e1)
+	doCompareNormalized(t, "scrape-metricNormalize-1", wantAttributes, m1, e1, true)
 }
