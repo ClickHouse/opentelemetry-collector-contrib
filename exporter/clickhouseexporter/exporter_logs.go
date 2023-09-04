@@ -59,7 +59,7 @@ func (e *logsExporter) shutdown(_ context.Context) error {
 	return nil
 }
 
-func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
+func (e *logsExporter) pushLogsData(_ context.Context, ld plog.Logs) error {
 	start := time.Now()
 	err := func() error {
 		scope, err := e.client.Begin()
