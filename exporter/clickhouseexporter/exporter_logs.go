@@ -116,7 +116,8 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 				scopeURL := logs.ScopeLogs().At(j).SchemaUrl()
 				scopeName := logs.ScopeLogs().At(j).Scope().Name()
 				scopeVersion := logs.ScopeLogs().At(j).Scope().Version()
-				scopeAttr := attributesToMap(logs.ScopeLogs().At(j).Scope().Attributes())
+				scopeAttr := make(map[string]string, attrs.Len())
+				attributesToMap(logs.ScopeLogs().At(j).Scope().Attributes(), scopeAttr)
 				for k := 0; k < rs.Len(); k++ {
 					r := rs.At(k)
 
@@ -229,6 +230,10 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 						CloudProvider,
 						Cell,
                         ResourceAttributes,
+                        ScopeSchemaUrl,
+                        ScopeName,
+                        ScopeVersion,
+                        ScopeAttributes,
                         LogAttributes
                         )`
 	inlineinsertLogsSQLTemplate = `INSERT INTO %s SETTINGS async_insert=1, wait_for_async_insert=0 (
@@ -294,7 +299,7 @@ func newClickHouseConn(cfg *Config) (*sql.DB, error) {
 	opts.Auth = clickhouse.Auth{
 		Database: cfg.Database,
 		Username: cfg.Username,
-		Password: cfg.Password,
+		Password: string(cfg.Password),
 	}
 
 	// can return a "bad" connection if misconfigured, we won't know

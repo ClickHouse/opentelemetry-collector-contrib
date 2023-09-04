@@ -98,7 +98,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 				require.Equal(t, "https://opentelemetry.io/schemas/1.4.0", values[8])
 				require.Equal(t, map[string]string{
 					"service.name": "test-service",
-				}, values[9])
+				}, values[14])
 			}
 			return nil
 		})
@@ -108,12 +108,13 @@ func TestExporter_pushLogsData(t *testing.T) {
 	t.Run("test check scope metadata", func(t *testing.T) {
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
-				require.Equal(t, "https://opentelemetry.io/schemas/1.7.0", values[10])
-				require.Equal(t, "io.opentelemetry.contrib.clickhouse", values[11])
-				require.Equal(t, "1.0.0", values[12])
+				// Check that values are aligned!
+				require.Equal(t, "https://opentelemetry.io/schemas/1.7.0", values[15])
+				require.Equal(t, "io.opentelemetry.contrib.clickhouse", values[16])
+				require.Equal(t, "1.0.0", values[17])
 				require.Equal(t, map[string]string{
 					"lib": "clickhouse",
-				}, values[13])
+				}, values[18])
 			}
 			return nil
 		})
