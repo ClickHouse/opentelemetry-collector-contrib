@@ -405,13 +405,6 @@ jobs:
           name: collector-binaries
           path: ./bin/
       - run: chmod +x bin/*
-      - name: Download Packages
-        uses: actions/download-artifact@v3
-        with:
-          name: collector-packages
-          path: ./dist/
-      - name: Add Permissions to Tool Binaries
-        run: chmod -R +x ./dist
       - name: Sanitize branch name and create version
         id: create-version
         env:
