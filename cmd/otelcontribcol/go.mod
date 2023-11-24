@@ -84,9 +84,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.89.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor v0.89.0
@@ -890,8 +890,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sev
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => ../../receiver/k8sclusterreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => ../../processor/transformprocessor
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor => ../../processor/logstransformprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor => ../../processor/filterprocessor
 
