@@ -86,6 +86,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.93.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.93.0
@@ -903,6 +904,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8scl
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => ../../processor/transformprocessor
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor => ../../processor/logstransformprocessor
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor => ../../processor/filterprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver => ../../extension/observer/hostobserver
@@ -970,6 +973,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influ
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver => ../../receiver/awscontainerinsightreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ../../processor/metricstransformprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor => ../../processor/logstransformprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension => ../../extension/sigv4authextension
 
