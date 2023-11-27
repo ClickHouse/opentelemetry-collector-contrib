@@ -42,11 +42,14 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 }
 
 func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
-	if err := createDatabase(ctx, e.cfg); err != nil {
-		return err
-	}
+	if e.cfg.CreateDBAndTables {
+		if err := createDatabase(ctx, e.cfg); err != nil {
+			return err
+		}
 
-	return createLogsTable(ctx, e.cfg, e.client)
+		return createLogsTable(ctx, e.cfg, e.client)
+	}
+	return nil
 }
 
 // shutdown will shut down the exporter.

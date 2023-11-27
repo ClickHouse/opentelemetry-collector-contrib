@@ -283,6 +283,7 @@ Connection options:
 - `ttl` (default = 0): The data time-to-live example 30m, 48h. Also, 0 means no ttl.
 - `database` (default = otel): The database name.
 - `connection_params` (default = {}). Params is the extra connection parameters with map format.
+- `create_db_and_tables` (default = false). On startup, create the otel database and tables
 
 ClickHouse tables:
 

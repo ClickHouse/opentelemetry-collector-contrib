@@ -37,14 +37,19 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, erro
 }
 
 func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
-	if err := createDatabase(ctx, e.cfg); err != nil {
-		return err
+	if e.cfg.CreateDBAndTables {
+		if err := createDatabase(ctx, e.cfg); err != nil {
+			return err
+		}
 	}
 
 	internal.SetLogger(e.logger)
 
 	ttlExpr := generateTTLExpr(e.cfg.TTLDays, e.cfg.TTL, "TimeUnix")
-	return internal.NewMetricsTable(ctx, e.cfg.MetricsTableName, ttlExpr, e.client)
+	if e.cfg.CreateDBAndTables {
+		return internal.NewMetricsTable(ctx, e.cfg.MetricsTableName, ttlExpr, e.client)
+	}
+	return nil
 }
 
 // shutdown will shut down the exporter.
