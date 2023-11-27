@@ -33,15 +33,16 @@ func createDefaultConfig() component.Config {
 	queueSettings.NumConsumers = 1
 
 	return &Config{
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
-		QueueSettings:    queueSettings,
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		ConnectionParams: map[string]string{},
-		Database:         defaultDatabase,
-		LogsTableName:    "otel_logs",
-		TracesTableName:  "otel_traces",
-		MetricsTableName: "otel_metrics",
-		TTL:              0,
+		TimeoutSettings:   exporterhelper.NewDefaultTimeoutSettings(),
+		QueueSettings:     queueSettings,
+		RetrySettings:     exporterhelper.NewDefaultRetrySettings(),
+		ConnectionParams:  map[string]string{},
+		Database:          defaultDatabase,
+		CreateDBAndTables: true, // this isn't actually default.
+		LogsTableName:     "otel_logs",
+		TracesTableName:   "otel_traces",
+		MetricsTableName:  "otel_metrics",
+		TTL:               0,
 	}
 }
 
