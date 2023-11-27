@@ -113,6 +113,7 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 - [Sean Marciniak](https://github.com/MovieStoreGuy), Atlassian
 - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
 
+
 Emeritus Maintainers
 
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
