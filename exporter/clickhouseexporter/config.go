@@ -41,7 +41,8 @@ type Config struct {
 	// Deprecated: Use 'ttl' instead
 	TTLDays uint `mapstructure:"ttl_days"`
 	// TTL is The data time-to-live example 30m, 48h. 0 means no ttl.
-	TTL time.Duration `mapstructure:"ttl"`
+	TTL               time.Duration `mapstructure:"ttl"`
+	CreateDBAndTables bool          `mapstructure:"create_db_and_tables"`
 }
 
 const defaultDatabase = "default"
