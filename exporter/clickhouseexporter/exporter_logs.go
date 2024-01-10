@@ -88,8 +88,12 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 				for k := 0; k < rs.Len(); k++ {
 					r := rs.At(k)
 					logAttr := attributesToMap(r.Attributes())
+					insertTimestamp := r.Timestamp()
+					if insertTimestamp == 0 {
+						insertTimestamp = r.ObservedTimestamp()
+					}
 					_, err = statement.ExecContext(ctx,
-						r.Timestamp().AsTime(),
+						insertTimestamp.AsTime(),
 						traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
 						traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
 						uint32(r.Flags()),
