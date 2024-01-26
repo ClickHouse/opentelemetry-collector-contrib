@@ -36,7 +36,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings:   exporterhelper.NewDefaultTimeoutSettings(),
 		QueueSettings:     queueSettings,
-		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+		BackOffConfig:     configretry.NewDefaultBackOffConfig(),
 		ConnectionParams:  map[string]string{},
 		Database:          defaultDatabase,
 		CreateDBAndTables: true, // this isn't actually default.
