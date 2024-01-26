@@ -86,7 +86,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.93.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.93.0
@@ -95,6 +94,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.93.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.93.0
@@ -903,8 +903,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sev
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => ../../receiver/k8sclusterreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => ../../processor/transformprocessor
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor => ../../processor/logstransformprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor => ../../processor/filterprocessor
 
