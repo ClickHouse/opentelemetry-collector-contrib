@@ -909,6 +909,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/delt
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor => ./processor/filterprocessor
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/loghouseprocessor => ./processor/loghouseprocessor
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor => ./processor/groupbyattrsprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor => ./processor/groupbytraceprocessor
