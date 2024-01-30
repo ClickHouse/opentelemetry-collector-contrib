@@ -165,7 +165,7 @@ func parsePlaintextSeverity(l *plog.LogRecord) {
 }
 
 func parsePlaintextTimestamp(l *plog.LogRecord) error {
-	// Priority - try and match a ClickHouse timestmap, if not - then fall back to a Kubenetes timestamp.
+	// Priority - try and match a ClickHouse timestamp, if not - then fall back to a Kubenetes timestamp.
 	var chErr, k8sErr error
 	var t time.Time
 	chMatch := chTimestampRe.FindString(l.Body().Str())
