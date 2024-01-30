@@ -60,6 +60,9 @@ func (p *logProcessor) ConsumeLogs(ctx context.Context, l plog.Logs) error {
 
 // K8s logs begin with "<timestamp> <stdout/err> F"
 func trimK8sLogPreamble(s string) (string, bool) {
+	if len(s) == 0 {
+		return s, false
+	}
 	if s[len(s)-1:] != "}" {
 		// This isn't a json string as the last char is not a closing brace
 		return s, false

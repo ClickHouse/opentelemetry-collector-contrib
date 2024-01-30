@@ -44,6 +44,57 @@ func Test_plaintextSeverity(t *testing.T) {
 
 }
 
+func Test_trimK8sPreamble(t *testing.T) {
+	type testCase struct {
+		in      string
+		exOut   string
+		exOk    bool
+		comment string
+	}
+	testCases := []testCase{
+		{
+			in:    "1234",
+			exOut: "1234",
+			exOk:  false,
+		},
+		{
+			in:    "}}}}}",
+			exOut: "}}}}}",
+			exOk:  false,
+		},
+		{
+			in:    "",
+			exOut: "",
+			exOk:  false,
+		},
+		{
+			in:      "junk {BLAH} blah",
+			exOut:   "junk {BLAH} blah",
+			exOk:    false,
+			comment: "we ignore the {} where it just exists within the string, as it doesnt look like a valid json log line",
+		},
+		{
+			in:      "junk {BLAH}",
+			exOut:   "{BLAH}",
+			exOk:    true,
+			comment: "where there is some preamble before a json like string, we trim the preamble.",
+		},
+		{
+			in:      "junk {} something else",
+			exOut:   "junk {} something else",
+			exOk:    false,
+			comment: "we ignore the {} where it just exists within the string, as it doesnt look like a valid json log line",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.in, func(t *testing.T) {
+			out, ok := trimK8sLogPreamble(tc.in)
+			assert.Equal(t, tc.exOk, ok)
+			assert.Equal(t, tc.exOut, out)
+		})
+	}
+}
+
 func Test_timestamp(t *testing.T) {
 
 	t.Run("prefer ClickHouse timestamp to K8s", func(t *testing.T) {
