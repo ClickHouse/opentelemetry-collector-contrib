@@ -30,11 +30,11 @@ func createDefaultConfig() component.Config {
 	return &Config{}
 }
 
-func createLogsProcessor(_ context.Context, params processor.CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
-	return newLogProcessor(params.TelemetrySettings, cfg, nextConsumer)
+func createLogsProcessor(_ context.Context, params processor.CreateSettings, _ component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
+	return newLogProcessor(params.TelemetrySettings, nextConsumer)
 }
 
-func newLogProcessor(settings component.TelemetrySettings, config component.Config, nextConsumer consumer.Logs) (*logProcessor, error) {
+func newLogProcessor(settings component.TelemetrySettings, nextConsumer consumer.Logs) (*logProcessor, error) {
 
 	meter := settings.MeterProvider.Meter("xoyo-logs")
 	nonRoutedLogRecordsCounter, err := meter.Int64Counter(

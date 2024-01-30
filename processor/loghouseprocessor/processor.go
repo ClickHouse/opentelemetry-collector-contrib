@@ -21,19 +21,10 @@ import (
 
 type logProcessor struct {
 	logger *zap.Logger
-	config *Config
 
-	extractor    extractor
 	nextConsumer consumer.Logs
 
 	nonRoutedLogRecordsCounter metric.Int64Counter
-}
-
-// extractor is responsible for extracting configured attributes from the processed data.
-// Currently, it can only extract the attributes from context.
-type extractor struct {
-	fromAttr string
-	logger   *zap.Logger
 }
 
 func (p *logProcessor) Shutdown(context.Context) error {
@@ -44,7 +35,7 @@ func (p *logProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (p *logProcessor) Start(_ context.Context, host component.Host) error {
+func (p *logProcessor) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
@@ -83,17 +74,17 @@ func trimK8sLogPreamble(s string) (string, bool) {
 	return s[index:], true
 }
 
-func extractJsonAttrs(body string, l *plog.LogRecord) error {
+func extractJSONAttrs(body string, l *plog.LogRecord) error {
 	j := jsoniter.ConfigFastest
 	var parsedValue map[string]any
 	err := j.UnmarshalFromString(body, &parsedValue)
 	if err != nil {
-		return fmt.Errorf("fail to unmarshal json | %v", err)
+		return fmt.Errorf("fail to unmarshal json | %w", err)
 	}
 	result := pcommon.NewMap()
 	err = result.FromRaw(parsedValue)
 	if err != nil {
-		return fmt.Errorf("fail to read attrs | %v", err)
+		return fmt.Errorf("fail to read attrs | %w", err)
 	}
 	result.CopyTo(l.Attributes())
 	return nil
@@ -119,7 +110,7 @@ func processOneLogLine(l *plog.LogRecord) error {
 	if !ok {
 		return processPlaintextLog(l)
 	}
-	err := extractJsonAttrs(jsonString, l)
+	err := extractJSONAttrs(jsonString, l)
 	if err != nil {
 		return err
 	}
@@ -132,7 +123,6 @@ func processJSONLog(l *plog.LogRecord) {
 	isCH := parseCHTimestamp(l)
 	if isCH {
 		parseCHSeverity(l)
-	} else {
 	}
 }
 
@@ -174,7 +164,7 @@ func parsePlaintextTimestamp(l *plog.LogRecord) error {
 		match := k8sTimestampRe.FindString(l.Body().Str())
 		t, k8sErr = time.Parse(time.RFC3339Nano, match)
 		if k8sErr != nil {
-			return fmt.Errorf("fail to parse CH time and K8s time, CH err: %v, k8s err: %v", chErr, k8sErr)
+			return fmt.Errorf("fail to parse CH time and K8s time, CH err: %w, k8s err: %w", chErr, k8sErr)
 		}
 	}
 	l.SetTimestamp(pcommon.NewTimestampFromTime(t))
