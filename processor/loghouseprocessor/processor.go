@@ -202,31 +202,18 @@ func updateSeverity(sev string, l *plog.LogRecord) {
 }
 
 func parseCHSeverity(l *plog.LogRecord) bool {
-	sevText, ok := l.Attributes().Get("level")
+	levelVal, ok := l.Attributes().Get("level")
 	if !ok {
 		return false
 	}
-	switch sevText.Str() {
-	case "0":
-		updateSeverity(FATAL, l)
-	case "1":
-		updateSeverity(FATAL, l)
-	case "2":
-		updateSeverity(FATAL, l)
-	case "3":
-		updateSeverity(ERROR, l)
-	case "4":
-		updateSeverity(WARN, l)
-	case "5":
-		updateSeverity(INFO, l)
-	case "6":
-		updateSeverity(INFO, l)
-	case "7":
-		updateSeverity(DEBUG, l)
-	case "8":
-		updateSeverity(TRACE, l)
+	level := strings.ToUpper(levelVal.Str())
+	switch level {
+	case "INFORMATION":
+		level = INFO
+	case "WARNING":
+		level = WARN
 	}
-	l.SetSeverityText(strings.ToUpper(l.SeverityNumber().String()))
+	updateSeverity(level, l)
 	return true
 }
 

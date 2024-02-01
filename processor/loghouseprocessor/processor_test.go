@@ -41,6 +41,59 @@ func Test_plaintextSeverity(t *testing.T) {
 		assert.Equal(t, WARN, log.SeverityText())
 		assert.Equal(t, plog.SeverityNumberWarn, log.SeverityNumber())
 	})
+}
+
+func Test_chSeverity(t *testing.T) {
+	type testCase struct {
+		in      string
+		exStr   string
+		exNum   plog.SeverityNumber
+		comment string
+	}
+	testCases := []testCase{
+		{
+			in:    "Info",
+			exStr: INFO,
+			exNum: plog.SeverityNumberInfo,
+		},
+		{
+			in:    "inforMation",
+			exStr: INFO,
+			exNum: plog.SeverityNumberInfo,
+		},
+		{
+			in:    "warn",
+			exStr: WARN,
+			exNum: plog.SeverityNumberWarn,
+		},
+		{
+			in:    "warnIng",
+			exStr: WARN,
+			exNum: plog.SeverityNumberWarn,
+		},
+		{
+			in:    "debug",
+			exStr: DEBUG,
+			exNum: plog.SeverityNumberDebug,
+		},
+		{
+			in:    "tracE",
+			exStr: TRACE,
+			exNum: plog.SeverityNumberTrace,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.in, func(t *testing.T) {
+			line := plog.NewLogRecord()
+			line.Attributes().PutStr("level", tc.in)
+
+			ok := parseCHSeverity(&line)
+			assert.True(t, ok)
+
+			assert.Equal(t, tc.exStr, line.SeverityText())
+			assert.Equal(t, tc.exNum, line.SeverityNumber())
+		})
+	}
 
 }
 
