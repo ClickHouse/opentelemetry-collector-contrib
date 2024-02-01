@@ -45,10 +45,9 @@ func Test_plaintextSeverity(t *testing.T) {
 
 func Test_chSeverity(t *testing.T) {
 	type testCase struct {
-		in      string
-		exStr   string
-		exNum   plog.SeverityNumber
-		comment string
+		in    string
+		exStr string
+		exNum plog.SeverityNumber
 	}
 	testCases := []testCase{
 		{
