@@ -45,10 +45,9 @@ func Test_plaintextSeverity(t *testing.T) {
 
 func Test_chSeverity(t *testing.T) {
 	type testCase struct {
-		in      string
-		exStr   string
-		exNum   plog.SeverityNumber
-		comment string
+		in    string
+		exStr string
+		exNum plog.SeverityNumber
 	}
 	testCases := []testCase{
 		{
@@ -99,10 +98,9 @@ func Test_chSeverity(t *testing.T) {
 
 func Test_trimK8sPreamble(t *testing.T) {
 	type testCase struct {
-		in      string
-		exOut   string
-		exOk    bool
-		comment string
+		in    string
+		exOut string
+		exOk  bool
 	}
 	testCases := []testCase{
 		{
@@ -121,22 +119,22 @@ func Test_trimK8sPreamble(t *testing.T) {
 			exOk:  false,
 		},
 		{
-			in:      "junk {BLAH} blah",
-			exOut:   "junk {BLAH} blah",
-			exOk:    false,
-			comment: "we ignore the {} where it just exists within the string, as it doesnt look like a valid json log line",
+			in:    "junk {BLAH} blah",
+			exOut: "junk {BLAH} blah",
+			exOk:  false,
+			// we ignore the {} where it just exists within the string, as it doesnt look like a valid json log line
 		},
 		{
-			in:      "junk {BLAH}",
-			exOut:   "{BLAH}",
-			exOk:    true,
-			comment: "where there is some preamble before a json like string, we trim the preamble.",
+			in:    "junk {BLAH}",
+			exOut: "{BLAH}",
+			exOk:  true,
+			// where there is some preamble before a json like string, we trim the preamble.
 		},
 		{
-			in:      "junk {} something else",
-			exOut:   "junk {} something else",
-			exOk:    false,
-			comment: "we ignore the {} where it just exists within the string, as it doesnt look like a valid json log line",
+			in:    "junk {} something else",
+			exOut: "junk {} something else",
+			exOk:  false,
+			// we ignore the {} where it just exists within the string, as it doesnt look like a valid json log line
 		},
 	}
 	for _, tc := range testCases {
@@ -173,3 +171,63 @@ func Test_timestamp(t *testing.T) {
 
 	})
 }
+
+func Test_processLine(t *testing.T) {
+	t.Run("server", func(t *testing.T) {
+		line := "{\"date_time\":\"1701792375.853698\",\"thread_name\":\"\",\"thread_id\":\"4751767\",\"level\":\"8\",\"query_id\":\"\",\"logger_name\":\"SystemLog (system.asynchronous_metric_log)\",\"message\":\"Flushed system log up to offset 532\",\"source_file\":\"src\\/Interpreters\\/SystemLog.cpp; void DB::SystemLog<DB::AsynchronousMetricLogElement>::flushImpl(const std::vector<LogElement> &, uint64_t) [LogElement = DB::AsynchronousMetricLogElement]\",\"source_line\":\"529\"}\n"
+		log := plog.NewLogRecord()
+		log.Body().SetStr(line)
+		log.Attributes().PutStr("k8s.container.name", "potter-server")
+
+		err := processOneLogLine(&log)
+		assert.NoError(t, err)
+
+		assert.Equal(t, "TRACE", log.SeverityText())
+		assert.Equal(t, plog.SeverityNumberTrace, log.SeverityNumber())
+	})
+
+	t.Run("keeper", func(t *testing.T) {
+		line := "{\"date_time\":\"1701792375.853698\",\"thread_name\":\"\",\"thread_id\":\"4751767\",\"level\":\"8\",\"query_id\":\"\",\"logger_name\":\"SystemLog (system.asynchronous_metric_log)\",\"message\":\"Flushed system log up to offset 532\",\"source_file\":\"src\\/Interpreters\\/SystemLog.cpp; void DB::SystemLog<DB::AsynchronousMetricLogElement>::flushImpl(const std::vector<LogElement> &, uint64_t) [LogElement = DB::AsynchronousMetricLogElement]\",\"source_line\":\"529\"}\n"
+		log := plog.NewLogRecord()
+		log.Body().SetStr(line)
+		log.Attributes().PutStr("k8s.container.name", "potter-keeper")
+
+		err := processOneLogLine(&log)
+		assert.NoError(t, err)
+
+		assert.Equal(t, "TRACE", log.SeverityText())
+		assert.Equal(t, plog.SeverityNumberTrace, log.SeverityNumber())
+	})
+
+	t.Run("generic", func(t *testing.T) {
+		line := "{}"
+		log := plog.NewLogRecord()
+		log.Body().SetStr(line)
+		log.Attributes().PutStr("k8s.container.name", "operator")
+
+		err := processOneLogLine(&log)
+		assert.NoError(t, err)
+
+	})
+}
+
+// func assertAttr(t *testing.T, expected, key string, log *plog.LogRecord) {
+// 	val, ok := log.Attributes().Get(key)
+// 	assert.True(t, ok)
+// 	assert.Equal(t, expected, val.Str())
+// }
+//  TODO for testing that metrics get updated
+// func getCounter() metric.Int64Counter {
+// 	meterProvider := sdkmetric.NewMeterProvider()
+//
+// 	meter := meterProvider.Meter("xoyo-logs")
+// 	observedLogsCtr, err := meter.Int64Counter(
+// 		"loghouse_observed_logs",
+// 		metric.WithDescription("Number of log records that were not routed to some or all exporters"),
+// 	)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	return observedLogsCtr
+//
+// }
