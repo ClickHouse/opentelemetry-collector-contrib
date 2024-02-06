@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
@@ -63,7 +64,8 @@ func trimK8sLogPreamble(s string) (string, bool) {
 	if len(s) == 0 {
 		return s, false
 	}
-	if s[len(s)-1:] != "}" {
+	lastChar := s[len(s)-1:]
+	if lastChar != "}" && !(lastChar == "\n" && len(s) > 1 && s[len(s)-2:] == "}\n") {
 		// This isn't a json string as the last char is not a closing brace
 		return s, false
 	}
@@ -201,11 +203,45 @@ func updateSeverity(sev string, l *plog.LogRecord) {
 	}
 }
 
+func parseCHNumericSeverity(l *plog.LogRecord) bool {
+	sevText, ok := l.Attributes().Get("level")
+	if !ok {
+		return false
+	}
+	switch sevText.Str() {
+	case "0":
+		updateSeverity(FATAL, l)
+	case "1":
+		updateSeverity(FATAL, l)
+	case "2":
+		updateSeverity(FATAL, l)
+	case "3":
+		updateSeverity(ERROR, l)
+	case "4":
+		updateSeverity(WARN, l)
+	case "5":
+		updateSeverity(INFO, l)
+	case "6":
+		updateSeverity(INFO, l)
+	case "7":
+		updateSeverity(DEBUG, l)
+	case "8":
+		updateSeverity(TRACE, l)
+	}
+	l.SetSeverityText(strings.ToUpper(l.SeverityNumber().String()))
+	return true
+}
+
 func parseCHSeverity(l *plog.LogRecord) bool {
 	levelVal, ok := l.Attributes().Get("level")
 	if !ok {
 		return false
 	}
+
+	if unicode.IsDigit([]rune(levelVal.Str())[0]) {
+		return parseCHNumericSeverity(l)
+	}
+
 	level := strings.ToUpper(levelVal.Str())
 	switch level {
 	case "INFORMATION":

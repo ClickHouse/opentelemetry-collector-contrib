@@ -4,10 +4,11 @@
 package loghouseprocessor
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/otel/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"testing"
 )
 
 func Test_plaintextSeverity(t *testing.T) {
@@ -170,4 +171,64 @@ func Test_timestamp(t *testing.T) {
 		assert.Equal(t, "2024-01-29 13:27:10.952171171 +0000 UTC", log.Timestamp().String())
 
 	})
+}
+
+func getCounter() metric.Int64Counter {
+	meterProvider := sdkmetric.NewMeterProvider()
+
+	meter := meterProvider.Meter("xoyo-logs")
+	observedLogsCtr, err := meter.Int64Counter(
+		"loghouse_observed_logs",
+		metric.WithDescription("Number of log records that were not routed to some or all exporters"),
+	)
+	if err != nil {
+		panic(err)
+	}
+	return observedLogsCtr
+
+}
+
+func Test_processLine(t *testing.T) {
+	t.Run("server", func(t *testing.T) {
+		line := "{\"date_time\":\"1701792375.853698\",\"thread_name\":\"\",\"thread_id\":\"4751767\",\"level\":\"8\",\"query_id\":\"\",\"logger_name\":\"SystemLog (system.asynchronous_metric_log)\",\"message\":\"Flushed system log up to offset 532\",\"source_file\":\"src\\/Interpreters\\/SystemLog.cpp; void DB::SystemLog<DB::AsynchronousMetricLogElement>::flushImpl(const std::vector<LogElement> &, uint64_t) [LogElement = DB::AsynchronousMetricLogElement]\",\"source_line\":\"529\"}\n"
+		log := plog.NewLogRecord()
+		log.Body().SetStr(line)
+		log.Attributes().PutStr("k8s.container.name", "potter-server")
+
+		err := processOneLogLine(&log)
+		assert.NoError(t, err)
+
+		assert.Equal(t, "TRACE", log.SeverityText())
+		assert.Equal(t, plog.SeverityNumberTrace, log.SeverityNumber())
+	})
+
+	t.Run("keeper", func(t *testing.T) {
+		line := "{\"date_time\":\"1701792375.853698\",\"thread_name\":\"\",\"thread_id\":\"4751767\",\"level\":\"8\",\"query_id\":\"\",\"logger_name\":\"SystemLog (system.asynchronous_metric_log)\",\"message\":\"Flushed system log up to offset 532\",\"source_file\":\"src\\/Interpreters\\/SystemLog.cpp; void DB::SystemLog<DB::AsynchronousMetricLogElement>::flushImpl(const std::vector<LogElement> &, uint64_t) [LogElement = DB::AsynchronousMetricLogElement]\",\"source_line\":\"529\"}\n"
+		log := plog.NewLogRecord()
+		log.Body().SetStr(line)
+		log.Attributes().PutStr("k8s.container.name", "potter-keeper")
+
+		err := processOneLogLine(&log)
+		assert.NoError(t, err)
+
+		assert.Equal(t, "TRACE", log.SeverityText())
+		assert.Equal(t, plog.SeverityNumberTrace, log.SeverityNumber())
+	})
+
+	t.Run("generic", func(t *testing.T) {
+		line := "{}"
+		log := plog.NewLogRecord()
+		log.Body().SetStr(line)
+		log.Attributes().PutStr("k8s.container.name", "operator")
+
+		err := processOneLogLine(&log)
+		assert.NoError(t, err)
+
+	})
+}
+
+func assertAttr(t *testing.T, expected, key string, log *plog.LogRecord) {
+	val, ok := log.Attributes().Get(key)
+	assert.True(t, ok)
+	assert.Equal(t, expected, val.Str())
 }
