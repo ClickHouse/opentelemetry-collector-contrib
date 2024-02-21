@@ -324,7 +324,7 @@ jobs:
           #- 386
           - amd64
           #- arm
-          #- arm64
+          - arm64
           #- ppc64le
         exclude:
           - os: darwin
