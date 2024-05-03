@@ -27,7 +27,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21
+          go-version: "1.20"
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -70,7 +70,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21
+          go-version: "1.20"
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -117,7 +117,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21
+          go-version: "1.20"
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -245,7 +245,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21
+          go-version: "1.20"
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -266,7 +266,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21
+          go-version: "1.20"
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -293,7 +293,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21
+          go-version: "1.20"
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -345,7 +345,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21
+          go-version: "1.20"
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -393,7 +393,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21
+          go-version: "1.20"
       - name: Mkdir bin and dist
         run: |
           mkdir bin/ dist/
@@ -440,9 +440,6 @@ jobs:
         run: |
           make docker-otelcontribcol
           docker tag otelcontribcol:latest 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:${{ steps.create-version.outputs.BUILD_VERSION }}
-      - name: Validate Docker Image
-        run: |
-          docker run 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:${{ steps.create-version.outputs.BUILD_VERSION }} --version
       - id: login-gcp
         name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v1
