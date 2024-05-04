@@ -369,18 +369,6 @@ jobs:
           path: ./bin/*
 
   publish-dev:
-    strategy:
-      matrix:
-        os:
-          #- darwin
-          - linux
-          #- windows
-        arch:
-          #- 386
-          - amd64
-          #- arm
-          - arm64
-          #- ppc64le
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -394,6 +382,10 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: "1.20"
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Mkdir bin and dist
         run: |
           mkdir bin/ dist/
@@ -423,23 +415,14 @@ jobs:
           BRANCH: ${{github.ref_name}}
           RUN_NUMBER: ${{github.run_number}}
           BASE_VERSION: "0.0.0"
-          GOARCH: ${{ matrix.arch }}
-          GOOS: ${{ matrix.os }}
         run: |
           # let's simply use the k8s namespace rules (even stricter) and have the same version(-suffix) for everything
           # lowercase everything and replace all invalid characters with '-' and trim to 60 characters
           SANITIZED_BRANCH=$(echo -n "${BRANCH}" | tr '[:upper:]' '[:lower:]' | tr -C 'a-z0-9' '-')
           SANITIZED_BRANCH="${SANITIZED_BRANCH:0:60}"
 
-          BUILD_VERSION="${BASE_VERSION}-${SANITIZED_BRANCH}-${RUN_NUMBER}-${GOOS}-${GOARCH}"
+          BUILD_VERSION="${BASE_VERSION}-${SANITIZED_BRANCH}-${RUN_NUMBER}"
           echo "BUILD_VERSION=${BUILD_VERSION}" | tee -a $GITHUB_ENV $GITHUB_OUTPUT
-      - name: Build Docker Image
-        env:
-          GOARCH: ${{ matrix.arch }}
-          GOOS: ${{ matrix.os }}
-        run: |
-          make docker-otelcontribcol
-          docker tag otelcontribcol:latest 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:${{ steps.create-version.outputs.BUILD_VERSION }}
       - id: login-gcp
         name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v1
@@ -475,10 +458,7 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-      - name: Push Docker Image
-        run: |
-          docker push 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:${{ steps.create-version.outputs.BUILD_VERSION }}
-      - name: Push image to GCP
+      - name: Build Docker Image and push
         env:
           DOCKER_IMAGE: otelcontribcol
           BUILD_VERSION: ${{steps.create-version.outputs.BUILD_VERSION}}
@@ -486,10 +466,11 @@ jobs:
           GCR_EUROPE_IMAGE: ${{secrets.GCR_EUROPE_IMAGE}}
           GCR_US_IMAGE: ${{secrets.GCR_US_IMAGE}}
         run: |
-          docker tag $DOCKER_IMAGE:latest ${GCR_ASIA_IMAGE}:${BUILD_VERSION}
-          docker tag $DOCKER_IMAGE:latest ${GCR_EUROPE_IMAGE}:${BUILD_VERSION}
-          docker tag $DOCKER_IMAGE:latest ${GCR_US_IMAGE}:${BUILD_VERSION}
-          docker push -a ${GCR_ASIA_IMAGE}
-          docker push -a ${GCR_EUROPE_IMAGE}
-          docker push -a ${GCR_US_IMAGE}
-
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:${BUILD_VERSION} \
+            -t ${GCR_ASIA_IMAGE}:${BUILD_VERSION} \
+            -t ${GCR_EUROPE_IMAGE}:${BUILD_VERSION} \
+            -t ${GCR_US_IMAGE}:${BUILD_VERSION} \
+            -f ./cmd/otelcontribcol/Dockerfile \
+            --push .
