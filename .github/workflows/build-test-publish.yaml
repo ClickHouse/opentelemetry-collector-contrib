@@ -19,7 +19,7 @@ concurrency:
 jobs:
   setup-environment:
     timeout-minutes: 30
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, large]
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - name: Checkout Repo
@@ -43,7 +43,7 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
   check-collector-module-version:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, large]
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
@@ -62,7 +62,7 @@ jobs:
           - connector
           - internal
           - other
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, large]
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
@@ -94,7 +94,7 @@ jobs:
         run: make -j2 golint GROUP=${{ matrix.group }}
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, large]
     needs: [setup-environment, lint-matrix]
     steps:
       - name: Print result
@@ -109,7 +109,7 @@ jobs:
             false
           fi
   checks:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, large]
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
@@ -181,7 +181,7 @@ jobs:
           - connector
           - internal
           - other
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, large]
     needs: [setup-environment]
     steps:
       - name: Collect Workflow Telemetry
@@ -221,7 +221,7 @@ jobs:
     strategy:
       matrix:
         go-version: ["1.21", "1.20"] # 1.20 is interpreted as 1.2 without quotes
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, large]
     needs: [setup-environment, unittest-matrix]
     steps:
       - name: Print result
@@ -237,7 +237,7 @@ jobs:
           fi
 
   integration-tests:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, large]
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
@@ -258,7 +258,7 @@ jobs:
         run: make integration-tests-with-cover
 
   correctness-traces:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, large]
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
@@ -285,7 +285,7 @@ jobs:
         run: make -C testbed run-correctness-traces-tests
 
   correctness-metrics:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, large]
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
@@ -312,7 +312,7 @@ jobs:
         run: make -C testbed run-correctness-metrics-tests
 
   cross-compile:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, large]
     needs: [unittest, integration-tests, lint]
     strategy:
       matrix:
@@ -372,7 +372,7 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, large]
     needs: [lint, unittest, integration-tests, cross-compile]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     steps:
