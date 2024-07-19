@@ -3,25 +3,6 @@
 package main
 
 import (
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/connector"
-	forwardconnector "go.opentelemetry.io/collector/connector/forwardconnector"
-	"go.opentelemetry.io/collector/exporter"
-	debugexporter "go.opentelemetry.io/collector/exporter/debugexporter"
-	nopexporter "go.opentelemetry.io/collector/exporter/nopexporter"
-	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
-	otlphttpexporter "go.opentelemetry.io/collector/exporter/otlphttpexporter"
-	"go.opentelemetry.io/collector/extension"
-	ballastextension "go.opentelemetry.io/collector/extension/ballastextension"
-	zpagesextension "go.opentelemetry.io/collector/extension/zpagesextension"
-	"go.opentelemetry.io/collector/otelcol"
-	"go.opentelemetry.io/collector/processor"
-	batchprocessor "go.opentelemetry.io/collector/processor/batchprocessor"
-	memorylimiterprocessor "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
-	"go.opentelemetry.io/collector/receiver"
-	nopreceiver "go.opentelemetry.io/collector/receiver/nopreceiver"
-	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
-
 	countconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
 	datadogconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 	exceptionsconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector"
@@ -218,6 +199,24 @@ import (
 	windowsperfcountersreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 	zipkinreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 	zookeeperreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
+	forwardconnector "go.opentelemetry.io/collector/connector/forwardconnector"
+	"go.opentelemetry.io/collector/exporter"
+	debugexporter "go.opentelemetry.io/collector/exporter/debugexporter"
+	nopexporter "go.opentelemetry.io/collector/exporter/nopexporter"
+	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
+	otlphttpexporter "go.opentelemetry.io/collector/exporter/otlphttpexporter"
+	"go.opentelemetry.io/collector/extension"
+	ballastextension "go.opentelemetry.io/collector/extension/ballastextension"
+	zpagesextension "go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/otelcol"
+	"go.opentelemetry.io/collector/processor"
+	batchprocessor "go.opentelemetry.io/collector/processor/batchprocessor"
+	memorylimiterprocessor "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
+	"go.opentelemetry.io/collector/receiver"
+	nopreceiver "go.opentelemetry.io/collector/receiver/nopreceiver"
+	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
 func components() (otelcol.Factories, error) {
@@ -598,14 +597,12 @@ func components() (otelcol.Factories, error) {
 		cumulativetodeltaprocessor.NewFactory(),
 		deltatorateprocessor.NewFactory(),
 		filterprocessor.NewFactory(),
-		loghouseprocessor.NewFactory(),
 		groupbyattrsprocessor.NewFactory(),
 		groupbytraceprocessor.NewFactory(),
 		intervalprocessor.NewFactory(),
 		k8sattributesprocessor.NewFactory(),
 		metricsgenerationprocessor.NewFactory(),
 		metricstransformprocessor.NewFactory(),
-		logstransformprocessor.NewFactory(),
 		probabilisticsamplerprocessor.NewFactory(),
 		redactionprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
@@ -616,6 +613,8 @@ func components() (otelcol.Factories, error) {
 		tailsamplingprocessor.NewFactory(),
 		transformprocessor.NewFactory(),
 		remotetapprocessor.NewFactory(),
+		logstransformprocessor.NewFactory(),
+		loghouseprocessor.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -643,6 +642,8 @@ func components() (otelcol.Factories, error) {
 	factories.ProcessorModules[tailsamplingprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.105.0"
 	factories.ProcessorModules[transformprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.105.0"
 	factories.ProcessorModules[remotetapprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor v0.105.0"
+	factories.ProcessorModules[logstransformprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor v0.105.0"
+	factories.ProcessorModules[loghouseprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/loghouseprocessor  v0.105.0"
 
 	factories.Connectors, err = connector.MakeFactoryMap(
 		forwardconnector.NewFactory(),

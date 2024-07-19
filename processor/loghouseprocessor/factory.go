@@ -12,15 +12,14 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "loghouse"
+var (
+// LoghouseProcessorType component.Type = "loghouseprocessor"
 )
 
 // NewFactory creates a factory for the routing processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		typeStr,
+		component.MustNewType("json_log_encoding"),
 		createDefaultConfig,
 		processor.WithLogs(createLogsProcessor, component.StabilityLevelBeta),
 	)

@@ -4,7 +4,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontrib
 
 go 1.21.0
 
-toolchain go1.21.12
+toolchain go1.22.5
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider v0.105.0
@@ -105,9 +105,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.105.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/loghouseprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor v0.105.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor v0.105.0
