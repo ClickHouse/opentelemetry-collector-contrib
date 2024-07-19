@@ -106,6 +106,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.105.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/loghouseprocessor v0.105.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor v0.105.0
@@ -1014,6 +1016,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/tran
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor => ../../processor/filterprocessor
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/loghouseprocessor => ../../processor/loghouseprocessor
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver => ../../extension/observer/hostobserver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver => ../../receiver/kafkareceiver
@@ -1079,6 +1083,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influ
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver => ../../receiver/awscontainerinsightreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ../../processor/metricstransformprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor => ../../processor/logstransformprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension => ../../extension/sigv4authextension
 
