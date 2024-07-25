@@ -10,8 +10,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 
 go 1.21.0
 
-toolchain go1.22.2
-
 // Replace references to modules that are in this repository with their relateive paths
 // so that we always build with current (latest) version of the source code.
 

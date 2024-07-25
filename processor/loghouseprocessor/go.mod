@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/logho
 
 go 1.21.0
 
-toolchain go1.22.2
-
 require (
 	github.com/json-iterator/go v1.1.12
 	github.com/stretchr/testify v1.9.0
