@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/metric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/loghouseprocessor/internal/metadata"
 )
 
 var (
@@ -19,9 +21,9 @@ var (
 // NewFactory creates a factory for the routing processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		component.MustNewType("json_log_encoding"),
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithLogs(createLogsProcessor, component.StabilityLevelBeta),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
 	)
 }
 
@@ -29,7 +31,7 @@ func createDefaultConfig() component.Config {
 	return &Config{}
 }
 
-func createLogsProcessor(_ context.Context, params processor.CreateSettings, _ component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
+func createLogsProcessor(_ context.Context, params processor.Settings, _ component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
 	return newLogProcessor(params.TelemetrySettings, nextConsumer)
 }
 
