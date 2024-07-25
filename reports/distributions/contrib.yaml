@@ -87,6 +87,7 @@ components:
         - k8sattributes
         - metricstransform
         - probabilistic_sampler
+        - processor
         - redaction
         - remotetap
         - resource
