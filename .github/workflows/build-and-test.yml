@@ -219,16 +219,6 @@ jobs:
         run: |
           make gotidy
           git diff --exit-code || (echo 'go.mod/go.sum deps changes detected, please run "make gotidy" and commit the changes in this PR.' && exit 1)
-      - name: Gen genotelcontribcol
-        run: |
-          make genotelcontribcol
-          git diff
-          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make genotelcontribcol" and commit the changes in this PR.' && exit 1)
-      - name: Gen genoteltestbedcol
-        run: |
-          make genoteltestbedcol
-          git diff
-          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make genoteltestbedcol" and commit the changes in this PR.' && exit 1)
       - name: Gen distributions
         run: |
           make gendistributions
