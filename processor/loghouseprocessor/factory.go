@@ -21,7 +21,7 @@ var (
 // NewFactory creates a factory for the routing processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		component.MustNewType("loghouse"),
+		metadata.Type,
 		createDefaultConfig,
 		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
 	)

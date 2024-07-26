@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	Type = component.MustNewType("processor")
+	Type = component.MustNewType("loghouse")
 )
 
 const (
