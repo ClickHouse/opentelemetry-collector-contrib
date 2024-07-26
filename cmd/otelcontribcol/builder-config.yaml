@@ -127,7 +127,7 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.105.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor v0.105.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor v0.105.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/loghouseprocessor  v0.105.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/loghouseprocessor v0.105.0
 
 
 receivers:

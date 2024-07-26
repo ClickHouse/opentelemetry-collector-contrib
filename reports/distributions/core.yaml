@@ -16,6 +16,7 @@ components:
         - attributes
         - filter
         - probabilistic_sampler
+        - processor
         - resource
         - span
     receiver:
