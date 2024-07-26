@@ -1,4 +1,4 @@
-type: processor
+type: loghouse
 scope_name: otelcol/loghouse
 
 status:
