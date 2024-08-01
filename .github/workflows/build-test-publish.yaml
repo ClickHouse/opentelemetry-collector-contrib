@@ -417,6 +417,17 @@ jobs:
 
           BUILD_VERSION="${BASE_VERSION}-${SANITIZED_BRANCH}-${RUN_NUMBER}"
           echo "BUILD_VERSION=${BUILD_VERSION}" | tee -a $GITHUB_ENV $GITHUB_OUTPUT
+      - id: login-azure
+        name: Authenticate with Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Login to Azure Artifact Registry
+        shell: bash
+        run: |
+          az acr login -n dataplanedeployment
       - id: login-gcp
         name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v1
@@ -461,6 +472,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:${{steps.create-version.outputs.BUILD_VERSION}}
+            ${{secrets.AAR_REPO_IMAGE}}:${{steps.create-version.outputs.BUILD_VERSION}}
             ${{secrets.GCR_ASIA_IMAGE}}:${{steps.create-version.outputs.BUILD_VERSION}}
             ${{secrets.GCR_EUROPE_IMAGE}}:${{steps.create-version.outputs.BUILD_VERSION}}
             ${{secrets.GCR_US_IMAGE}}:${{steps.create-version.outputs.BUILD_VERSION}}
