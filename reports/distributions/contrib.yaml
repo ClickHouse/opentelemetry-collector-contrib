@@ -92,6 +92,7 @@ components:
         - metricsgeneration
         - metricstransform
         - probabilistic_sampler
+        - processor
         - redaction
         - remotetap
         - resource
