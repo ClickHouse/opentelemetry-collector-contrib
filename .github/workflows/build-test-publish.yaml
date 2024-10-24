@@ -47,7 +47,8 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+      - run: make genotelcontribcol
       - name: Check Collector Module Version
         run: ./.github/workflows/scripts/check-collector-module-version.sh
   lint-matrix:
