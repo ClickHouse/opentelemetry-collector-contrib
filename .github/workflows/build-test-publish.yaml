@@ -132,6 +132,7 @@ jobs:
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
+      - run: make genotelcontribcol
       - name: CheckDoc
         run: make checkdoc
       - name: Porto
