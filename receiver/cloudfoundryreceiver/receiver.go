@@ -12,17 +12,20 @@ import (
 
 	"code.cloudfoundry.org/go-loggregator"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver/internal/metadata"
 )
 
 const (
-	transport              = "http"
-	dataFormat             = "cloudfoundry"
-	instrumentationLibName = "otelcol/cloudfoundry"
+	transport  = "http"
+	dataFormat = "cloudfoundry"
 )
 
 var _ receiver.Metrics = (*cloudFoundryReceiver)(nil)
@@ -118,17 +121,18 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 		cfr.settings.Logger.Debug("cloudfoundry receiver starting")
 		_, tokenErr = tokenProvider.ProvideToken()
 		if tokenErr != nil {
-			cfr.settings.ReportStatus(
-				component.NewFatalErrorEvent(
+			componentstatus.ReportStatus(
+				host,
+				componentstatus.NewFatalErrorEvent(
 					fmt.Errorf("cloudfoundry receiver failed to fetch initial token from UAA: %w", tokenErr),
 				),
 			)
 			return
 		}
 		if cfr.nextLogs != nil {
-			cfr.streamLogs(innerCtx, streamFactory.CreateLogsStream(innerCtx, cfr.config.RLPGateway.ShardID))
+			cfr.streamLogs(innerCtx, streamFactory.CreateLogsStream(innerCtx, cfr.config.RLPGateway.ShardID), host)
 		} else if cfr.nextMetrics != nil {
-			cfr.streamMetrics(innerCtx, streamFactory.CreateMetricsStream(innerCtx, cfr.config.RLPGateway.ShardID))
+			cfr.streamMetrics(innerCtx, streamFactory.CreateMetricsStream(innerCtx, cfr.config.RLPGateway.ShardID), host)
 		}
 		cfr.settings.Logger.Debug("cloudfoundry receiver stopped")
 	}()
@@ -146,7 +150,8 @@ func (cfr *cloudFoundryReceiver) Shutdown(_ context.Context) error {
 
 func (cfr *cloudFoundryReceiver) streamMetrics(
 	ctx context.Context,
-	stream loggregator.EnvelopeStream) {
+	stream loggregator.EnvelopeStream,
+	host component.Host) {
 
 	for {
 		// Blocks until non-empty result or context is cancelled (returns nil in that case)
@@ -154,8 +159,9 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 		if envelopes == nil {
 			// If context has not been cancelled, then nil means the shutdown was due to an error within stream
 			if ctx.Err() == nil {
-				cfr.settings.ReportStatus(
-					component.NewFatalErrorEvent(
+				componentstatus.ReportStatus(
+					host,
+					componentstatus.NewFatalErrorEvent(
 						errors.New("RLP gateway metrics streamer shut down due to an error"),
 					),
 				)
@@ -174,6 +180,9 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 		if libraryMetrics.Len() > 0 {
 			obsCtx := cfr.obsrecv.StartMetricsOp(ctx)
 			err := cfr.nextMetrics.ConsumeMetrics(ctx, metrics)
+			if err != nil {
+				cfr.settings.Logger.Error("Failed to consume metrics", zap.Error(err))
+			}
 			cfr.obsrecv.EndMetricsOp(obsCtx, dataFormat, metrics.DataPointCount(), err)
 		}
 	}
@@ -181,14 +190,16 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 
 func (cfr *cloudFoundryReceiver) streamLogs(
 	ctx context.Context,
-	stream loggregator.EnvelopeStream) {
+	stream loggregator.EnvelopeStream,
+	host component.Host) {
 
 	for {
 		envelopes := stream()
 		if envelopes == nil {
 			if ctx.Err() == nil {
-				cfr.settings.ReportStatus(
-					component.NewFatalErrorEvent(
+				componentstatus.ReportStatus(
+					host,
+					componentstatus.NewFatalErrorEvent(
 						errors.New("RLP gateway log streamer shut down due to an error"),
 					),
 				)
@@ -206,6 +217,9 @@ func (cfr *cloudFoundryReceiver) streamLogs(
 		if libraryLogs.Len() > 0 {
 			obsCtx := cfr.obsrecv.StartLogsOp(ctx)
 			err := cfr.nextLogs.ConsumeLogs(ctx, logs)
+			if err != nil {
+				cfr.settings.Logger.Error("Failed to consume logs", zap.Error(err))
+			}
 			cfr.obsrecv.EndLogsOp(obsCtx, dataFormat, logs.LogRecordCount(), err)
 		}
 	}
@@ -214,13 +228,13 @@ func (cfr *cloudFoundryReceiver) streamLogs(
 func createLibraryMetricsSlice(metrics pmetric.Metrics) pmetric.MetricSlice {
 	resourceMetric := metrics.ResourceMetrics().AppendEmpty()
 	libraryMetrics := resourceMetric.ScopeMetrics().AppendEmpty()
-	libraryMetrics.Scope().SetName(instrumentationLibName)
+	libraryMetrics.Scope().SetName(metadata.ScopeName)
 	return libraryMetrics.Metrics()
 }
 
 func createLibraryLogsSlice(logs plog.Logs) plog.LogRecordSlice {
 	resourceLog := logs.ResourceLogs().AppendEmpty()
 	libraryLogs := resourceLog.ScopeLogs().AppendEmpty()
-	libraryLogs.Scope().SetName(instrumentationLibName)
+	libraryLogs.Scope().SetName(metadata.ScopeName)
 	return libraryLogs.LogRecords()
 }

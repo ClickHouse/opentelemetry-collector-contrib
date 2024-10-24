@@ -141,8 +141,6 @@ extensions:
   health_check:
   pprof:
   zpages:
-  memory_ballast:
-    size_mib: 1000
 
 service:
   extensions:
