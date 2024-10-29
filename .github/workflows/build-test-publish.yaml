@@ -430,39 +430,39 @@ jobs:
           az acr login -n dataplanedeployment
       - id: login-gcp
         name: Authenticate with Google Cloud
-        uses: google-github-actions/auth@v1
+        uses: google-github-actions/auth@v2
         with:
           token_format: access_token
           workload_identity_provider: ${{secrets.GCR_WORKLOAD_IDENTITY_PROVIDER}}
           service_account: ${{secrets.GCR_SERVICE_ACCOUNT}}
           access_token_lifetime: 1800s
       - name: Login to us Artifact Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: us-docker.pkg.dev
           username: oauth2accesstoken
           password: ${{ steps.login-gcp.outputs.access_token }}
       - name: Login to eu Artifact Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: europe-docker.pkg.dev
           username: oauth2accesstoken
           password: ${{ steps.login-gcp.outputs.access_token }}
       - name: Login to asia Artifact Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: asia-docker.pkg.dev
           username: oauth2accesstoken
           password: ${{ steps.login-gcp.outputs.access_token }}
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{secrets.ECR_AWS_ACCESS_KEY_ID}}
           aws-secret-access-key: ${{secrets.ECR_AWS_SECRET_ACCESS_KEY}}
           aws-region: us-west-2
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
       - name: build and push
         uses: docker/build-push-action@v5
         with:
