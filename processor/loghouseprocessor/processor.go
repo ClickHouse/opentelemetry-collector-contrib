@@ -123,7 +123,17 @@ func processOneLogLine(l *plog.LogRecord) error {
 	return nil
 }
 
+func parseSeverity(l *plog.LogRecord) error {
+	logLevel, ok := l.Attributes().Get("level")
+	if !ok {
+		return fmt.Errorf("no level specified")
+	}
+	updateSeverity(strings.ToUpper(logLevel.Str()), l)
+	return nil
+}
+
 func processJSONLog(l *plog.LogRecord) {
+	_ = parseSeverity(l)
 	extractBody(l)
 	isCH := parseCHTimestamp(l)
 	if isCH {
