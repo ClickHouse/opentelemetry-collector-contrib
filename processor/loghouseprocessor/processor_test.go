@@ -10,6 +10,39 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
+func Test_dp(t *testing.T) {
+	t.Run("json severity", func(t *testing.T) {
+		// Define the test cases in a table format
+		tests := []struct {
+			name          string
+			input         string
+			expectedText  string
+			expectedLevel plog.SeverityNumber
+		}{
+			{"Error severity", "{\"level\": \"fatal\"}", FATAL, plog.SeverityNumberFatal},
+			{"Error severity", "{\"level\": \"error\"}", ERROR, plog.SeverityNumberError},
+			{"Warning severity", "{\"level\": \"warn\"}", WARN, plog.SeverityNumberWarn},
+			{"Info severity", "{\"level\": \"info\"}", INFO, plog.SeverityNumberInfo},
+			{"Debug severity", "{\"level\": \"debug\"}", DEBUG, plog.SeverityNumberDebug},
+			{"Debug severity", "{\"level\": \"trace\"}", TRACE, plog.SeverityNumberTrace},
+			// Add more severity levels if needed
+		}
+
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+				log := plog.NewLogRecord()
+				log.Body().SetStr(tc.input)
+
+				err := processOneLogLine(&log)
+				assert.NoError(t, err)
+
+				assert.Equal(t, tc.expectedText, log.SeverityText())
+				assert.Equal(t, tc.expectedLevel, log.SeverityNumber())
+			})
+		}
+	})
+}
+
 func Test_plaintextSeverity(t *testing.T) {
 	t.Run("trace", func(t *testing.T) {
 		line := "2023-01-02 11:20:30 <TRACE> some log line"
