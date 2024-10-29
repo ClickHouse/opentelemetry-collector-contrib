@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
@@ -21,7 +22,7 @@ var errPipelineNotFound = errors.New("pipeline not found")
 // consumerProvider is a function with a type parameter C (expected to be one
 // of consumer.Traces, consumer.Metrics, or Consumer.Logs). returns a
 // consumer for the given component ID(s).
-type consumerProvider[C any] func(...component.ID) (C, error)
+type consumerProvider[C any] func(...pipeline.ID) (C, error)
 
 // router registers consumers and default consumers for a pipeline. the type
 // parameter C is expected to be one of: consumer.Traces, consumer.Metrics, or
@@ -42,7 +43,7 @@ type router[C any] struct {
 // see router struct definition for the allowed types.
 func newRouter[C any](
 	table []RoutingTableItem,
-	defaultPipelineIDs []component.ID,
+	defaultPipelineIDs []pipeline.ID,
 	provider consumerProvider[C],
 	settings component.TelemetrySettings,
 ) (*router[C], error) {
@@ -75,12 +76,14 @@ type routingItem[C any] struct {
 	statement *ottl.Statement[ottlresource.TransformContext]
 }
 
-func (r *router[C]) registerConsumers(defaultPipelineIDs []component.ID) error {
+func (r *router[C]) registerConsumers(defaultPipelineIDs []pipeline.ID) error {
 	// register default pipelines
 	err := r.registerDefaultConsumer(defaultPipelineIDs)
 	if err != nil {
 		return err
 	}
+
+	r.normalizeConditions()
 
 	// register pipelines for each route
 	err = r.registerRouteConsumers()
@@ -93,7 +96,7 @@ func (r *router[C]) registerConsumers(defaultPipelineIDs []component.ID) error {
 
 // registerDefaultConsumer registers a consumer for the default
 // pipelines configured
-func (r *router[C]) registerDefaultConsumer(pipelineIDs []component.ID) error {
+func (r *router[C]) registerDefaultConsumer(pipelineIDs []pipeline.ID) error {
 	if len(pipelineIDs) == 0 {
 		return nil
 	}
@@ -108,11 +111,21 @@ func (r *router[C]) registerDefaultConsumer(pipelineIDs []component.ID) error {
 	return nil
 }
 
+// convert conditions to statements
+func (r *router[C]) normalizeConditions() {
+	for i := range r.table {
+		item := &r.table[i]
+		if item.Condition != "" {
+			item.Statement = fmt.Sprintf("route() where %s", item.Condition)
+		}
+	}
+}
+
 // registerRouteConsumers registers a consumer for the pipelines configured
 // for each route
 func (r *router[C]) registerRouteConsumers() error {
 	for _, item := range r.table {
-		statement, err := r.getStatementFrom(item)
+		statement, err := r.parser.ParseStatement(item.Statement)
 		if err != nil {
 			return err
 		}
@@ -141,21 +154,6 @@ func (r *router[C]) registerRouteConsumers() error {
 		r.routes[key(item)] = route
 	}
 	return nil
-}
-
-// getStatementFrom builds a routing OTTL statement from the provided
-// routing table entry configuration. If the routing table entry configuration
-// does not contain a valid OTTL statement then nil is returned.
-func (r *router[C]) getStatementFrom(item RoutingTableItem) (*ottl.Statement[ottlresource.TransformContext], error) {
-	var statement *ottl.Statement[ottlresource.TransformContext]
-	if item.Statement != "" {
-		var err error
-		statement, err = r.parser.ParseStatement(item.Statement)
-		if err != nil {
-			return statement, err
-		}
-	}
-	return statement, nil
 }
 
 func key(entry RoutingTableItem) string {
