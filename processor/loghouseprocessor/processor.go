@@ -138,7 +138,7 @@ func processJSONLog(l *plog.LogRecord) {
 	_ = parseSeverity(l)
 	extractBody(l)
 	promoteTraceAndSpan(l)
-	promoteResourceAttrs(l)
+	//promoteResourceAttrs(l)
 	isCH := parseCHTimestamp(l)
 	if isCH {
 		parseCHSeverity(l)

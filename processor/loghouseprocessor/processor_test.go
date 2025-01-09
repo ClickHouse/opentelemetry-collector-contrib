@@ -4,6 +4,7 @@
 package loghouseprocessor
 
 import (
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -244,23 +245,39 @@ func Test_processLine(t *testing.T) {
 	})
 }
 
-// func assertAttr(t *testing.T, expected, key string, log *plog.LogRecord) {
-// 	val, ok := log.Attributes().Get(key)
-// 	assert.True(t, ok)
-// 	assert.Equal(t, expected, val.Str())
-// }
-//  TODO for testing that metrics get updated
-// func getCounter() metric.Int64Counter {
-// 	meterProvider := sdkmetric.NewMeterProvider()
-//
-// 	meter := meterProvider.Meter("xoyo-logs")
-// 	observedLogsCtr, err := meter.Int64Counter(
-// 		"loghouse_observed_logs",
-// 		metric.WithDescription("Number of log records that were not routed to some or all exporters"),
-// 	)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	return observedLogsCtr
-//
-// }
+func Test_promoteTraceAndSpan(t *testing.T) {
+	type expect struct {
+		trace pcommon.TraceID
+		span  pcommon.SpanID
+	}
+	tests := []struct {
+		name     string
+		args     map[string]any
+		expected expect
+	}{
+		{name: "missing both", args: *new(map[string]any), expected: expect{
+			trace: pcommon.TraceID{},
+			span:  pcommon.SpanID{},
+		}},
+		{name: "have both", args: map[string]any{"traceId": "00000000000000000000000000000001", "spanId": "0000000000000001"}, expected: expect{
+			trace: pcommon.TraceID{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x01},
+			span:  pcommon.SpanID{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x01},
+		}},
+		{name: "one passed it, so ignore", args: map[string]any{"traceId": "00000000000000000000000000000001"}, expected: expect{
+			trace: pcommon.TraceID{},
+			span:  pcommon.SpanID{},
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := plog.NewLogRecord()
+			err := l.Attributes().FromRaw(tt.args)
+			if err != nil {
+				t.Fatalf("failed to parse from the args")
+			}
+			promoteTraceAndSpan(&l)
+			assert.Equal(t, tt.expected.span, l.SpanID())
+			assert.Equal(t, tt.expected.trace, l.TraceID())
+		})
+	}
+}
