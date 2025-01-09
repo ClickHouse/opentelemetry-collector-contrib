@@ -267,7 +267,7 @@ func Test_promoteTraceAndSpan(t *testing.T) {
 			trace: pcommon.TraceID{},
 			span:  pcommon.SpanID{},
 		}},
-		{name: "garbage, also ignore", args: map[string]any{"traceId": "blah", "spanId": "blah"}, expected: expect{
+		{name: "garbage, also ignore", args: map[string]any{"traceId": "00000000000000000000000000000001", "spanId": "blah"}, expected: expect{
 			trace: pcommon.TraceID{},
 			span:  pcommon.SpanID{},
 		}},
