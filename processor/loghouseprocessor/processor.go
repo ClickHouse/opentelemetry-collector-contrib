@@ -4,6 +4,8 @@
 package loghouseprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/loghouseprocessor"
 import (
 	"context"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -135,9 +137,63 @@ func parseSeverity(l *plog.LogRecord) error {
 func processJSONLog(l *plog.LogRecord) {
 	_ = parseSeverity(l)
 	extractBody(l)
+	promoteTraceAndSpan(l)
+	promoteResourceAttrs(l)
 	isCH := parseCHTimestamp(l)
 	if isCH {
 		parseCHSeverity(l)
+	}
+}
+
+// Both funcs copied from: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/internal/ids.go#L25
+
+func ParseSpanID(spanIDStr string) (pcommon.SpanID, error) {
+	var id pcommon.SpanID
+	if hex.DecodedLen(len(spanIDStr)) != len(id) {
+		return pcommon.SpanID{}, errors.New("span ids must be 16 hex characters")
+	}
+	_, err := hex.Decode(id[:], []byte(spanIDStr))
+	if err != nil {
+		return pcommon.SpanID{}, err
+	}
+	return id, nil
+}
+
+func ParseTraceID(traceIDStr string) (pcommon.TraceID, error) {
+	var id pcommon.TraceID
+	if hex.DecodedLen(len(traceIDStr)) != len(id) {
+		return pcommon.TraceID{}, errors.New("trace ids must be 32 hex characters")
+	}
+	_, err := hex.Decode(id[:], []byte(traceIDStr))
+	if err != nil {
+		return pcommon.TraceID{}, err
+	}
+	return id, nil
+}
+
+func promoteTraceAndSpan(l *plog.LogRecord) {
+	var (
+		traceId pcommon.TraceID
+		spanId  pcommon.SpanID
+	)
+	if tid, ok := l.Attributes().Get("traceId"); ok {
+		parsed, err := ParseTraceID(tid.Str())
+		if err != nil {
+			return
+		}
+		traceId = parsed
+	}
+	if sid, ok := l.Attributes().Get("spanId"); ok {
+		parsed, err := ParseSpanID(sid.Str())
+		if err != nil {
+			return
+		}
+		spanId = parsed
+	}
+	// No point having one or the other, we must always do both
+	if !traceId.IsEmpty() && !spanId.IsEmpty() {
+		l.SetTraceID(traceId)
+		l.SetSpanID(spanId)
 	}
 }
 
