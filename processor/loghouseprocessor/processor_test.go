@@ -286,3 +286,66 @@ func Test_promoteTraceAndSpan(t *testing.T) {
 		})
 	}
 }
+
+func Test_promoteResourceAttrs(t *testing.T) {
+	t.Run("single log", func(t *testing.T) {
+		rl := plog.NewResourceLogs()
+		l := plog.NewLogRecord()
+		l.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r1": "v1"}})
+
+		promoteResourceAttrs(&l, &rl)
+
+		val, ok := rl.Resource().Attributes().Get("r1")
+		assert.True(t, ok)
+		assert.Equal(t, "v1", val.Str())
+	})
+
+	t.Run("two logs", func(t *testing.T) {
+		rl := plog.NewResourceLogs()
+		l1 := plog.NewLogRecord()
+		l1.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r1": "v1"}})
+		l2 := plog.NewLogRecord()
+		l2.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r2": "v2"}})
+
+		promoteResourceAttrs(&l1, &rl)
+		promoteResourceAttrs(&l2, &rl)
+
+		v1, ok := rl.Resource().Attributes().Get("r1")
+		assert.True(t, ok)
+		assert.Equal(t, "v1", v1.Str())
+
+		v2, ok := rl.Resource().Attributes().Get("r2")
+		assert.True(t, ok)
+		assert.Equal(t, "v2", v2.Str())
+	})
+
+	t.Run("last wins", func(t *testing.T) {
+		rl := plog.NewResourceLogs()
+		l1 := plog.NewLogRecord()
+		l1.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r1": "v1"}})
+		l2 := plog.NewLogRecord()
+		l2.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r1": "v2"}})
+
+		promoteResourceAttrs(&l1, &rl)
+		promoteResourceAttrs(&l2, &rl)
+
+		v2, ok := rl.Resource().Attributes().Get("r1")
+		assert.True(t, ok)
+		assert.Equal(t, "v2", v2.Str())
+	})
+
+	t.Run("overwrite original", func(t *testing.T) {
+		rl := plog.NewResourceLogs()
+		rl.Resource().Attributes().FromRaw(map[string]any{"r1": "original"})
+		l1 := plog.NewLogRecord()
+		l1.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r1": "v1"}})
+
+		promoteResourceAttrs(&l1, &rl)
+
+		v1, ok := rl.Resource().Attributes().Get("r1")
+		assert.True(t, ok)
+		assert.Equal(t, "v1", v1.Str())
+
+	})
+
+}

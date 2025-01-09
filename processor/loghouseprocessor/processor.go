@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	"regexp"
 	"strconv"
 	"strings"
@@ -55,6 +56,9 @@ func (p *logProcessor) ConsumeLogs(ctx context.Context, l plog.Logs) error {
 				if err != nil {
 					p.logger.Debug("failed to parse log line", zap.Error(err))
 				}
+				// This does have a "last line wins" if we have somehow set the same key with different values.
+				// We are just going to ignore this case for now though.
+				promoteResourceAttrs(&logLine, &rlogs)
 			}
 		}
 	}
@@ -142,6 +146,15 @@ func processJSONLog(l *plog.LogRecord) {
 	if isCH {
 		parseCHSeverity(l)
 	}
+}
+
+func promoteResourceAttrs(l *plog.LogRecord, rlogs *plog.ResourceLogs) {
+	attributes, ok := l.Attributes().Get("resource")
+	if !ok {
+		return
+	}
+	merged := maps.MergeRawMaps(rlogs.Resource().Attributes().AsRaw(), attributes.Map().AsRaw())
+	rlogs.Resource().Attributes().FromRaw(merged)
 }
 
 // Both funcs copied from: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/internal/ids.go#L25
