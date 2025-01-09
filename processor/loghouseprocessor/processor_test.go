@@ -267,6 +267,10 @@ func Test_promoteTraceAndSpan(t *testing.T) {
 			trace: pcommon.TraceID{},
 			span:  pcommon.SpanID{},
 		}},
+		{name: "garbage, also ignore", args: map[string]any{"traceId": "blah", "spanId": "blah"}, expected: expect{
+			trace: pcommon.TraceID{},
+			span:  pcommon.SpanID{},
+		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
