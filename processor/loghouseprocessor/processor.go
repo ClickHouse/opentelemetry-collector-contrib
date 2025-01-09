@@ -175,14 +175,14 @@ func promoteTraceAndSpan(l *plog.LogRecord) {
 		traceID pcommon.TraceID
 		spanID  pcommon.SpanID
 	)
-	if tid, ok := l.Attributes().Get("traceID"); ok {
+	if tid, ok := l.Attributes().Get("traceId"); ok {
 		parsed, err := ParseTraceID(tid.Str())
 		if err != nil {
 			return
 		}
 		traceID = parsed
 	}
-	if sid, ok := l.Attributes().Get("spanID"); ok {
+	if sid, ok := l.Attributes().Get("spanId"); ok {
 		parsed, err := ParseSpanID(sid.Str())
 		if err != nil {
 			return
