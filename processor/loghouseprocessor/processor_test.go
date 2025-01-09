@@ -4,8 +4,9 @@
 package loghouseprocessor
 
 import (
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"testing"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -255,7 +256,7 @@ func Test_promoteTraceAndSpan(t *testing.T) {
 		args     map[string]any
 		expected expect
 	}{
-		{name: "missing both", args: *new(map[string]any), expected: expect{
+		{name: "missing both", args: map[string]any(nil), expected: expect{
 			trace: pcommon.TraceID{},
 			span:  pcommon.SpanID{},
 		}},

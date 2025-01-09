@@ -172,27 +172,27 @@ func ParseTraceID(traceIDStr string) (pcommon.TraceID, error) {
 
 func promoteTraceAndSpan(l *plog.LogRecord) {
 	var (
-		traceId pcommon.TraceID
-		spanId  pcommon.SpanID
+		traceID pcommon.TraceID
+		spanID  pcommon.SpanID
 	)
-	if tid, ok := l.Attributes().Get("traceId"); ok {
+	if tid, ok := l.Attributes().Get("traceID"); ok {
 		parsed, err := ParseTraceID(tid.Str())
 		if err != nil {
 			return
 		}
-		traceId = parsed
+		traceID = parsed
 	}
-	if sid, ok := l.Attributes().Get("spanId"); ok {
+	if sid, ok := l.Attributes().Get("spanID"); ok {
 		parsed, err := ParseSpanID(sid.Str())
 		if err != nil {
 			return
 		}
-		spanId = parsed
+		spanID = parsed
 	}
 	// No point having one or the other, we must always do both
-	if !traceId.IsEmpty() && !spanId.IsEmpty() {
-		l.SetTraceID(traceId)
-		l.SetSpanID(spanId)
+	if !traceID.IsEmpty() && !spanID.IsEmpty() {
+		l.SetTraceID(traceID)
+		l.SetSpanID(spanID)
 	}
 }
 
