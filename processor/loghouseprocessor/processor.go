@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	"regexp"
 	"strconv"
 	"strings"
@@ -153,8 +152,21 @@ func promoteResourceAttrs(l *plog.LogRecord, rlogs *plog.ResourceLogs) {
 	if !ok {
 		return
 	}
-	merged := maps.MergeRawMaps(rlogs.Resource().Attributes().AsRaw(), attributes.Map().AsRaw())
+	merged := MergeRawMaps(rlogs.Resource().Attributes().AsRaw(), attributes.Map().AsRaw())
 	rlogs.Resource().Attributes().FromRaw(merged)
+}
+
+// MergeRawMaps merges n maps with a later map's keys overriding earlier maps. (copied to avoid dep hell)
+func MergeRawMaps(maps ...map[string]any) map[string]any {
+	ret := map[string]any{}
+
+	for _, m := range maps {
+		for k, v := range m {
+			ret[k] = v
+		}
+	}
+
+	return ret
 }
 
 // Both funcs copied from: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/internal/ids.go#L25
