@@ -6,9 +6,8 @@ package loghouseprocessor
 import (
 	"testing"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
-
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -291,7 +290,7 @@ func Test_promoteResourceAttrs(t *testing.T) {
 	t.Run("single log", func(t *testing.T) {
 		rl := plog.NewResourceLogs()
 		l := plog.NewLogRecord()
-		l.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r1": "v1"}})
+		_ = l.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r1": "v1"}})
 
 		promoteResourceAttrs(&l, &rl)
 
@@ -303,9 +302,9 @@ func Test_promoteResourceAttrs(t *testing.T) {
 	t.Run("two logs", func(t *testing.T) {
 		rl := plog.NewResourceLogs()
 		l1 := plog.NewLogRecord()
-		l1.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r1": "v1"}})
+		_ = l1.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r1": "v1"}})
 		l2 := plog.NewLogRecord()
-		l2.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r2": "v2"}})
+		_ = l2.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r2": "v2"}})
 
 		promoteResourceAttrs(&l1, &rl)
 		promoteResourceAttrs(&l2, &rl)
@@ -322,9 +321,9 @@ func Test_promoteResourceAttrs(t *testing.T) {
 	t.Run("last wins", func(t *testing.T) {
 		rl := plog.NewResourceLogs()
 		l1 := plog.NewLogRecord()
-		l1.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r1": "v1"}})
+		_ = l1.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r1": "v1"}})
 		l2 := plog.NewLogRecord()
-		l2.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r1": "v2"}})
+		_ = l2.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r1": "v2"}})
 
 		promoteResourceAttrs(&l1, &rl)
 		promoteResourceAttrs(&l2, &rl)
@@ -336,9 +335,9 @@ func Test_promoteResourceAttrs(t *testing.T) {
 
 	t.Run("overwrite original", func(t *testing.T) {
 		rl := plog.NewResourceLogs()
-		rl.Resource().Attributes().FromRaw(map[string]any{"r1": "original"})
+		_ = rl.Resource().Attributes().FromRaw(map[string]any{"r1": "original"})
 		l1 := plog.NewLogRecord()
-		l1.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r1": "v1"}})
+		_ = l1.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r1": "v1"}})
 
 		promoteResourceAttrs(&l1, &rl)
 
