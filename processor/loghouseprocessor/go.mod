@@ -1,12 +1,10 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/loghouseprocessor
 
-go 1.22.0
-
-toolchain go1.23.2
+go 1.21.0
 
 require (
 	github.com/json-iterator/go v1.1.12
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.105.1-0.20240717163034-43ed6184f9fe
 	go.opentelemetry.io/collector/confmap v0.105.1-0.20240717163034-43ed6184f9fe
 	go.opentelemetry.io/collector/consumer v0.105.1-0.20240717163034-43ed6184f9fe
@@ -18,8 +16,6 @@ require (
 	go.uber.org/zap v1.27.0
 
 )
-
-require github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.117.0
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -45,7 +41,7 @@ require (
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.105.1-0.20240717163034-43ed6184f9fe // indirect
-	go.opentelemetry.io/collector/featuregate v1.23.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240716231837-5753a58f712b // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.105.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.105.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.105.0 // indirect
