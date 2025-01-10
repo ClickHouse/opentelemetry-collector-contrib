@@ -55,6 +55,9 @@ func (p *logProcessor) ConsumeLogs(ctx context.Context, l plog.Logs) error {
 				if err != nil {
 					p.logger.Debug("failed to parse log line", zap.Error(err))
 				}
+				// This does have a "last line wins" if we have somehow set the same key with different values.
+				// We are just going to ignore this case for now though.
+				promoteResourceAttrs(&logLine, &rlogs)
 			}
 		}
 	}
@@ -142,6 +145,28 @@ func processJSONLog(l *plog.LogRecord) {
 	if isCH {
 		parseCHSeverity(l)
 	}
+}
+
+func promoteResourceAttrs(l *plog.LogRecord, rlogs *plog.ResourceLogs) {
+	attributes, ok := l.Attributes().Get("resource")
+	if !ok {
+		return
+	}
+	merged := MergeRawMaps(rlogs.Resource().Attributes().AsRaw(), attributes.Map().AsRaw())
+	rlogs.Resource().Attributes().FromRaw(merged)
+}
+
+// MergeRawMaps merges n maps with a later map's keys overriding earlier maps. (copied to avoid dep hell)
+func MergeRawMaps(maps ...map[string]any) map[string]any {
+	ret := map[string]any{}
+
+	for _, m := range maps {
+		for k, v := range m {
+			ret[k] = v
+		}
+	}
+
+	return ret
 }
 
 // Both funcs copied from: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/internal/ids.go#L25
