@@ -153,7 +153,7 @@ func promoteResourceAttrs(l *plog.LogRecord, rlogs *plog.ResourceLogs) {
 		return
 	}
 	merged := MergeRawMaps(rlogs.Resource().Attributes().AsRaw(), attributes.Map().AsRaw())
-	rlogs.Resource().Attributes().FromRaw(merged)
+	_ = rlogs.Resource().Attributes().FromRaw(merged)
 }
 
 // MergeRawMaps merges n maps with a later map's keys overriding earlier maps. (copied to avoid dep hell)
