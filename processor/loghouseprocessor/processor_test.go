@@ -351,11 +351,11 @@ func Test_promoteResourceAttrs(t *testing.T) {
 		rl := plog.NewResourceLogs()
 		_ = rl.Resource().Attributes().FromRaw(map[string]any{"r1": "original"})
 		l1 := plog.NewLogRecord()
-		_ = l1.Attributes().FromRaw(map[string]any{"resource": "r1"})
+		_ = l1.Attributes().FromRaw(map[string]any{"resource": "r2"})
 
 		promoteResourceAttrs(&l1, &rl)
 
-		_, ok := rl.Resource().Attributes().Get("r1")
+		_, ok := rl.Resource().Attributes().Get("r2")
 		assert.False(t, ok)
 	})
 
