@@ -347,4 +347,28 @@ func Test_promoteResourceAttrs(t *testing.T) {
 
 	})
 
+	t.Run("not a map", func(t *testing.T) {
+		rl := plog.NewResourceLogs()
+		_ = rl.Resource().Attributes().FromRaw(map[string]any{"r1": "original"})
+		l1 := plog.NewLogRecord()
+		_ = l1.Attributes().FromRaw(map[string]any{"resource": "r2"})
+
+		promoteResourceAttrs(&l1, &rl)
+
+		_, ok := rl.Resource().Attributes().Get("r2")
+		assert.False(t, ok)
+	})
+
+	t.Run("empty resources", func(t *testing.T) {
+		rl := plog.NewResourceLogs()
+		l1 := plog.NewLogRecord()
+		_ = l1.Attributes().FromRaw(map[string]any{"resource": map[string]any{"r1": "v1"}})
+
+		promoteResourceAttrs(&l1, &rl)
+
+		v1, ok := rl.Resource().Attributes().Get("r1")
+		assert.True(t, ok)
+		assert.Equal(t, "v1", v1.Str())
+	})
+
 }
