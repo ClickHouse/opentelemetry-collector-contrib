@@ -5,7 +5,6 @@ package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"math"
-	"strconv"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/otlptranslator"
@@ -117,7 +116,7 @@ func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryD
 		// Process quantiles
 		for i := 0; i < pt.QuantileValues().Len(); i++ {
 			qt := pt.QuantileValues().At(i)
-			percentileStr := strconv.FormatFloat(qt.Quantile(), 'f', -1, 64)
+			percentileStr := promLabels.FormatOpenMetricsFloat(qt.Quantile())
 			c.addSampleWithLabels(qt.Value(), timestamp, noRecordedValue, baseName, baseLabels, quantileStr, percentileStr, metadata)
 		}
 	}
